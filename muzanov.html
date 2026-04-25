@@ -1,0 +1,2874 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
+  />
+  <meta name="theme-color" content="#0a0a0b" />
+  <meta name="color-scheme" content="dark" />
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Quarters" />
+  <meta name="format-detection" content="telephone=no" />
+
+  <!-- Manifest will be wired up properly in the Next.js project; placeholder for now -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+  <title>QUARTERS · Operations Control</title>
+
+  <style>
+    /* ============================================================
+       DESIGN TOKENS
+       ============================================================ */
+    :root {
+      /* Surfaces — true black base */
+      --bg-base:        #000000;
+      --bg-canvas:      #0a0a0a;
+      --bg-elevated:    #121212;
+      --bg-panel:       #151515;
+      --bg-panel-2:     #181818;
+      --bg-hover:       #1e1e1e;
+      --bg-active:      #242424;
+
+      /* Lines */
+      --border-soft:    rgba(255, 255, 255, 0.04);
+      --border:         rgba(255, 255, 255, 0.07);
+      --border-strong:  rgba(255, 255, 255, 0.11);
+      --border-bright:  rgba(255, 255, 255, 0.20);
+
+      /* Type */
+      --text-1:         #f5f5f5;
+      --text-2:         #c0c0c0;
+      --text-3:         #8a8a8a;
+      --text-4:         #5a5a5a;
+      --text-5:         #3a3a3a;
+
+      /* Status palette — monochrome + yellow + green only */
+      --status-idle:        #5a5a5a;
+      --status-scheduled:   #808080;
+      --status-progress:    #f5c518;
+      --status-paused:      #c8a200;
+      --status-attention:   #c8a200;
+      --status-postponed:   #606060;
+      --status-rework:      #a08800;
+      --status-completed:   #3aae5f;
+
+      /* Accent — yellow only */
+      --accent:         #f5c518;
+      --accent-soft:    rgba(245, 197, 24, 0.10);
+      --danger:         #aa2a3a;
+      --danger-soft:    rgba(170, 42, 58, 0.10);
+      --success:        #3aae5f;
+      --success-soft:   rgba(58, 174, 95, 0.10);
+
+      /* Geometry — tighter radii */
+      --radius-sm: 4px;
+      --radius:    6px;
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+
+      /* Typography */
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, monospace;
+
+      /* Layout */
+      --header-h: 56px;
+      --bottomnav-h: 64px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bot: env(safe-area-inset-bottom, 0px);
+      --safe-l:   env(safe-area-inset-left, 0px);
+      --safe-r:   env(safe-area-inset-right, 0px);
+    }
+
+    /* ============================================================
+       RESET / BASE
+       ============================================================ */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--bg-base);
+      color: var(--text-1);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overscroll-behavior: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding-left: var(--safe-l);
+      padding-right: var(--safe-r);
+    }
+
+    button {
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+      background: none;
+      border: 0;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    input, textarea, select {
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+      background: transparent;
+      border: 0;
+      outline: 0;
+    }
+
+    ::selection { background: var(--accent-soft); color: var(--text-1); }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+    /* ============================================================
+       APP LAYOUT
+       ============================================================ */
+    .app {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      min-height: 100dvh;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    /* HEADER ===================================================== */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      height: calc(var(--header-h) + var(--safe-top));
+      padding: var(--safe-top) 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(10, 10, 11, 0.78);
+      backdrop-filter: saturate(160%) blur(18px);
+      -webkit-backdrop-filter: saturate(160%) blur(18px);
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: #1e1e26;
+      border: 1px solid var(--border-strong);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .brand-mark svg { width: 14px; height: 14px; color: var(--accent); }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.05;
+      min-width: 0;
+    }
+    .brand-name {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--text-1);
+    }
+    .brand-sub {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.14em;
+      color: var(--text-4);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .topbar-spacer { flex: 1; }
+
+    .system-pill {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg-panel);
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.08em;
+      color: var(--text-2);
+      text-transform: uppercase;
+    }
+    @media (min-width: 720px) {
+      .system-pill { display: inline-flex; }
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 0 rgba(58,174,95,0.6);
+      animation: pulse 2.4s ease-out infinite;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(58,174,95,0.55); }
+      70%  { box-shadow: 0 0 0 8px rgba(58,174,95,0); }
+      100% { box-shadow: 0 0 0 0 rgba(58,174,95,0); }
+    }
+
+    .role-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.08em;
+      color: var(--text-2);
+      text-transform: uppercase;
+      transition: all 200ms ease;
+    }
+    .role-toggle:hover {
+      border-color: var(--border-strong);
+      color: var(--text-1);
+    }
+    .role-toggle .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent);
+    }
+    .role-toggle[data-role="viewer"] .dot { background: var(--text-3); }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-panel);
+      color: var(--text-2);
+      transition: all 180ms ease;
+    }
+    .icon-btn:hover {
+      color: var(--text-1);
+      border-color: var(--border-strong);
+      background: var(--bg-hover);
+    }
+    .icon-btn:active { transform: scale(0.96); }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+    /* MAIN CONTENT =============================================== */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding: 0 12px 24px;
+      padding-bottom: calc(var(--bottomnav-h) + var(--safe-bot) + 16px);
+    }
+
+    @media (min-width: 1024px) {
+      .main {
+        grid-template-columns: 320px 1fr 360px;
+        gap: 16px;
+        padding: 16px 16px 24px;
+      }
+    }
+
+    /* PANELS / CARDS ============================================= */
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .panel::before {
+      display: none;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .panel-title {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .panel-title h2 {
+      margin: 0;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      color: var(--text-2);
+      text-transform: uppercase;
+    }
+    .panel-title .code {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--text-4);
+    }
+    .panel-body { padding: 16px; }
+
+    /* MOBILE SECTION HEADERS ===================================== */
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 18px 4px 10px;
+    }
+    .section-head h2 {
+      margin: 0;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      color: var(--text-3);
+      text-transform: uppercase;
+    }
+    .section-head .meta {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--text-4);
+    }
+
+    /* ============================================================
+       OVERVIEW PANEL (stats)
+       ============================================================ */
+    .overview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 14px;
+    }
+
+    .stat {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 76px;
+    }
+    .stat .label {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-4);
+    }
+    .stat .value {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+    }
+    .stat.accent .value { color: var(--accent); }
+    .stat.success .value { color: var(--success); }
+
+    .stat .sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-3);
+    }
+
+    .progress-block {
+      grid-column: 1 / -1;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .progress-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .progress-row .label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+    .progress-row .pct {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+    }
+    .progress-bar {
+      height: 6px;
+      background: var(--bg-active);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-bar .fill {
+      height: 100%;
+      background: var(--success);
+      border-radius: 999px;
+      transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    /* ============================================================
+       MAP PANEL
+       ============================================================ */
+    .map-panel {
+      margin-top: 12px;
+    }
+    @media (min-width: 1024px) {
+      .map-panel { margin-top: 0; }
+    }
+
+    .map-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 12px 0;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg-elevated);
+      color: var(--text-3);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      transition: all 180ms ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-chip:hover {
+      color: var(--text-1);
+      border-color: var(--border-strong);
+    }
+    .filter-chip[aria-pressed="true"] {
+      color: var(--text-1);
+      background: var(--bg-active);
+      border-color: var(--border-bright);
+    }
+    .filter-chip .count {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-4);
+    }
+    .filter-chip[aria-pressed="true"] .count { color: var(--text-2); }
+
+    .map-frame {
+      padding: 12px;
+    }
+
+    .map-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 600 / 800;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .map-canvas::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+      background-size: 20px 20px;
+      pointer-events: none;
+    }
+
+    .map-canvas::after {
+      display: none;
+    }
+
+    .map-corner {
+      position: absolute;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      color: var(--text-5);
+      text-transform: uppercase;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .map-corner.tl { top: 10px; left: 12px; }
+    .map-corner.tr { top: 10px; right: 12px; }
+    .map-corner.bl { bottom: 10px; left: 12px; }
+    .map-corner.br { bottom: 10px; right: 12px; }
+
+    .map-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ROOM SHAPES ================================================ */
+    .room {
+      cursor: pointer;
+      transition: opacity 200ms ease;
+    }
+    .room:hover .room-shape { stroke: rgba(255,255,255,0.22); }
+    .room .room-shape {
+      fill: #17171c;
+      stroke: rgba(255,255,255,0.13);
+      stroke-width: 1;
+      transition:
+        fill 220ms ease,
+        stroke 220ms ease,
+        stroke-width 220ms ease;
+    }
+
+    /* Subtle room-type tints */
+    .room[data-room="bedroom_small"] .room-shape,
+    .room[data-room="bedroom_medium"] .room-shape,
+    .room[data-room="living"] .room-shape   { fill: #181820; }
+    .room[data-room="bath"] .room-shape,
+    .room[data-room="wc"] .room-shape       { fill: #141c1e; }
+    .room[data-room="kitchen"] .room-shape  { fill: #1c1814; }
+    .room[data-room="corridor"] .room-shape { fill: #151518; }
+    .room[data-room="entry"] .room-shape    { fill: #16181e; }
+    .room[data-room="wardrobe"] .room-shape { fill: #17171f; }
+    .room .room-label {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 500;
+      fill: var(--text-2);
+      pointer-events: none;
+      letter-spacing: 0.02em;
+    }
+    .room .room-code {
+      font-family: var(--font-mono);
+      font-size: 8.5px;
+      letter-spacing: 0.12em;
+      fill: var(--text-4);
+      pointer-events: none;
+      text-transform: uppercase;
+    }
+    .room .room-area {
+      font-family: var(--font-mono);
+      font-size: 8.5px;
+      fill: var(--text-5);
+      pointer-events: none;
+    }
+    .room .status-dot {
+      fill: var(--status-idle);
+      transition: fill 220ms ease;
+    }
+
+    /* Status-driven styling */
+    .room[data-status="in_progress"] .room-shape {
+      fill: rgba(245,197,24,0.06);
+      stroke: var(--status-progress);
+      stroke-width: 1.4;
+    }
+    .room[data-status="in_progress"] .status-dot { fill: var(--status-progress); }
+    .room[data-status="in_progress"] .pulse-ring { display: block; }
+
+    .room[data-status="paused"] .room-shape {
+      fill: rgba(212,160,23,0.05);
+      stroke: var(--status-paused);
+      stroke-dasharray: 3 3;
+    }
+    .room[data-status="paused"] .status-dot { fill: var(--status-paused); }
+
+    .room[data-status="attention"] .room-shape {
+      fill: rgba(249,115,22,0.05);
+      stroke: var(--status-attention);
+    }
+    .room[data-status="attention"] .status-dot { fill: var(--status-attention); }
+
+    .room[data-status="rework"] .room-shape {
+      fill: rgba(251,146,60,0.05);
+      stroke: var(--status-rework);
+    }
+    .room[data-status="rework"] .status-dot { fill: var(--status-rework); }
+
+    .room[data-status="completed"] .room-shape {
+      fill: rgba(58,174,95,0.07);
+      stroke: var(--status-completed);
+    }
+    .room[data-status="completed"] .status-dot { fill: var(--status-completed); }
+
+    .room[data-status="scheduled"] .room-shape {
+      fill: rgba(138,147,168,0.04);
+      stroke: var(--status-scheduled);
+    }
+    .room[data-status="scheduled"] .status-dot { fill: var(--status-scheduled); }
+
+    .room[data-status="postponed"] .status-dot { fill: var(--status-postponed); }
+
+    .room.is-selected .room-shape {
+      stroke-width: 2;
+      filter: drop-shadow(0 0 6px rgba(255,255,255,0.18));
+    }
+
+    /* Pulsing ring for in-progress rooms */
+    .pulse-ring {
+      display: none;
+      fill: none;
+      stroke: var(--status-progress);
+      stroke-width: 1;
+      opacity: 0.5;
+      animation: ringPulse 2.4s ease-out infinite;
+      pointer-events: none;
+    }
+    @keyframes ringPulse {
+      0%   { opacity: 0.6; r: 4; }
+      100% { opacity: 0; r: 14; }
+    }
+
+    /* Door markers — architectural style */
+    .door-leaf {
+      fill: none;
+      stroke: rgba(255,255,255,0.28);
+      stroke-width: 1.2;
+      stroke-linecap: round;
+    }
+    .door-arc {
+      fill: none;
+      stroke: rgba(255,255,255,0.10);
+      stroke-width: 0.9;
+    }
+
+    /* ============================================================
+       OPERATIONS / HISTORY FEED
+       ============================================================ */
+    .feed-panel { margin-top: 12px; }
+    @media (min-width: 1024px) {
+      .feed-panel { margin-top: 0; }
+    }
+
+    .feed {
+      display: flex;
+      flex-direction: column;
+      max-height: 520px;
+      overflow-y: auto;
+    }
+
+    .feed-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-soft);
+      transition: background 180ms ease;
+    }
+    .feed-item:hover { background: var(--bg-elevated); }
+    .feed-item:last-child { border-bottom: 0; }
+
+    .feed-mark {
+      flex-shrink: 0;
+      width: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .feed-mark .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--status-idle);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    .feed-mark .line {
+      width: 1px;
+      flex: 1;
+      background: var(--border);
+    }
+
+    .feed-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-bottom: 4px;
+    }
+    .feed-time {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--text-4);
+      text-transform: uppercase;
+    }
+    .feed-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-1);
+      line-height: 1.35;
+    }
+    .feed-room {
+      font-size: 12px;
+      color: var(--text-3);
+    }
+    .feed-room .sep {
+      color: var(--text-5);
+      margin: 0 6px;
+    }
+
+    .feed-empty {
+      padding: 36px 24px;
+      text-align: center;
+      color: var(--text-4);
+      font-size: 13px;
+    }
+
+    /* Status legend (inline) */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-soft);
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.10em;
+      color: var(--text-3);
+      text-transform: uppercase;
+    }
+    .legend-item .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      border: 1px solid var(--border-strong);
+    }
+
+    /* ============================================================
+       ROOM DETAIL DRAWER (sheet on mobile, side on desktop)
+       ============================================================ */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.58);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+    .drawer-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-height: 92vh;
+      max-height: 92dvh;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border-strong);
+      border-radius: 12px 12px 0 0;
+      z-index: 60;
+      transform: translateY(100%);
+      transition: transform 320ms cubic-bezier(0.2, 0.85, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.4);
+      padding-bottom: var(--safe-bot);
+      overflow: hidden;
+    }
+    .drawer.open { transform: translateY(0); }
+
+    @media (min-width: 1024px) {
+      .drawer {
+        top: 16px;
+        right: 16px;
+        bottom: 16px;
+        left: auto;
+        width: 420px;
+        max-height: none;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        transform: translateX(110%);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      }
+      .drawer.open { transform: translateX(0); }
+    }
+
+    .drawer-grip {
+      width: 44px;
+      height: 4px;
+      background: var(--border-strong);
+      border-radius: 999px;
+      margin: 10px auto 0;
+      flex-shrink: 0;
+    }
+    @media (min-width: 1024px) {
+      .drawer-grip { display: none; }
+    }
+
+    .drawer-head {
+      padding: 16px 20px 8px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .drawer-title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+    .drawer-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--text-4);
+      text-transform: uppercase;
+    }
+    .drawer-eyebrow .code {
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-3);
+    }
+
+    .drawer-title {
+      font-family: var(--font-sans);
+      font-size: 26px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      color: var(--text-1);
+      margin: 0;
+      line-height: 1.1;
+    }
+
+    .drawer-close {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--text-3);
+      flex-shrink: 0;
+      transition: all 180ms ease;
+    }
+    .drawer-close:hover {
+      background: var(--bg-hover);
+      color: var(--text-1);
+    }
+    .drawer-close svg { width: 16px; height: 16px; }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 8px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Status block in drawer */
+    .status-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-elevated);
+    }
+    .status-card .indicator {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .status-card .indicator svg { width: 16px; height: 16px; }
+
+    .status-card .info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .status-card .label {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.14em;
+      color: var(--text-4);
+      text-transform: uppercase;
+    }
+    .status-card .value {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-1);
+    }
+
+    /* Detail rows */
+    .detail-list {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-elevated);
+      overflow: hidden;
+    }
+    .detail-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .detail-row:last-child { border-bottom: 0; }
+    .detail-row .k {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.10em;
+      color: var(--text-4);
+      text-transform: uppercase;
+      padding-top: 2px;
+    }
+    .detail-row .v {
+      font-size: 13px;
+      color: var(--text-1);
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .detail-row .v.muted { color: var(--text-3); }
+    .detail-row .v.mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    /* Sub-section title in drawer */
+    .sub-title {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--text-4);
+      text-transform: uppercase;
+      padding: 0 2px;
+      margin-bottom: -8px;
+    }
+
+    /* Mini timeline */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-left: 1px solid var(--border);
+      margin-left: 6px;
+      padding-left: 14px;
+    }
+    .timeline-item {
+      position: relative;
+      padding: 8px 0 12px;
+    }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -19px;
+      top: 12px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--status-idle);
+      border: 2px solid var(--bg-panel);
+      box-shadow: 0 0 0 1px var(--border-strong);
+    }
+    .timeline-item.is-completed::before { background: var(--status-completed); }
+    .timeline-item.is-active::before { background: var(--status-progress); }
+    .timeline-time {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-4);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .timeline-text {
+      font-size: 13px;
+      color: var(--text-2);
+      margin-top: 2px;
+    }
+
+    .timeline-empty {
+      font-size: 12px;
+      color: var(--text-4);
+      padding: 8px 0;
+    }
+
+    /* Drawer actions (Owner only) */
+    .drawer-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 14px 20px calc(20px + var(--safe-bot));
+      border-top: 1px solid var(--border-soft);
+      background: var(--bg-panel-2);
+      flex-shrink: 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      transition: all 180ms ease;
+      border: 1px solid transparent;
+      min-height: 44px;
+    }
+    .btn:active { transform: scale(0.985); }
+    .btn svg { width: 15px; height: 15px; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0a0a00;
+    }
+    .btn-primary:hover { background: #e8ba10; }
+
+    .btn-secondary {
+      background: var(--bg-elevated);
+      border-color: var(--border);
+      color: var(--text-1);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-2);
+    }
+    .btn-ghost:hover {
+      background: var(--bg-elevated);
+      color: var(--text-1);
+    }
+
+    .btn-danger {
+      background: var(--danger-soft);
+      border-color: rgba(200,54,74,0.35);
+      color: #ff6c80;
+    }
+    .btn-danger:hover {
+      background: rgba(200,54,74,0.18);
+      border-color: rgba(200,54,74,0.55);
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .viewer-notice {
+      padding: 12px 14px;
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--bg-elevated);
+      color: var(--text-3);
+      font-size: 12px;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    /* ============================================================
+       BOTTOM NAV (mobile)
+       ============================================================ */
+    .bottomnav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      padding: 8px max(12px, var(--safe-l)) calc(8px + var(--safe-bot)) max(12px, var(--safe-r));
+      background: rgba(13, 13, 15, 0.82);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-top: 1px solid var(--border-soft);
+      display: flex;
+      gap: 8px;
+    }
+    @media (min-width: 1024px) {
+      .bottomnav { display: none; }
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 8px 4px;
+      border-radius: 12px;
+      color: var(--text-3);
+      transition: all 180ms ease;
+      min-height: 48px;
+    }
+    .nav-btn svg { width: 20px; height: 20px; }
+    .nav-btn span {
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      font-weight: 500;
+    }
+    .nav-btn[aria-pressed="true"] {
+      color: var(--text-1);
+      background: var(--bg-elevated);
+    }
+    .nav-btn:active { transform: scale(0.96); }
+
+    /* Mobile view switching */
+    .view { display: none; }
+    .view.active { display: block; }
+    @media (min-width: 1024px) {
+      .view { display: block !important; }
+    }
+
+    /* ============================================================
+       TOAST
+       ============================================================ */
+    .toast-host {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: calc(var(--bottomnav-h) + var(--safe-bot) + 16px);
+      z-index: 80;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      padding: 0 12px;
+    }
+    @media (min-width: 1024px) {
+      .toast-host { bottom: 24px; }
+    }
+
+    .toast {
+      pointer-events: auto;
+      min-width: 240px;
+      max-width: 360px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-1);
+      font-size: 13px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      transform: translateY(20px);
+      opacity: 0;
+      animation: toastIn 280ms cubic-bezier(0.2, 0.85, 0.2, 1) forwards;
+    }
+    .toast .toast-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .toast.success .toast-dot { background: var(--success); }
+    .toast.warn .toast-dot    { background: var(--accent); }
+    .toast.danger .toast-dot  { background: var(--danger); }
+
+    @keyframes toastIn {
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .toast.leaving {
+      animation: toastOut 220ms ease forwards;
+    }
+    @keyframes toastOut {
+      to { transform: translateY(20px); opacity: 0; }
+    }
+
+    /* ============================================================
+       CONFIRMATION DIALOG
+       ============================================================ */
+    .dialog-host {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      animation: fadeIn 200ms ease;
+    }
+    .dialog-host.open { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .dialog {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      max-width: 360px;
+      width: 100%;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      animation: dialogIn 240ms cubic-bezier(0.2, 0.85, 0.2, 1);
+    }
+    @keyframes dialogIn {
+      from { transform: translateY(12px) scale(0.98); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .dialog-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: var(--danger-soft);
+      color: #ff6c80;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(200,54,74,0.25);
+    }
+    .dialog-icon svg { width: 18px; height: 18px; }
+    .dialog h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+    .dialog p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-3);
+      line-height: 1.5;
+    }
+    .dialog-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .dialog-actions .btn { flex: 1; }
+
+    /* ============================================================
+       OPERATION/STATUS PICKER (bottom sheet)
+       ============================================================ */
+    .picker-host {
+      position: fixed;
+      inset: 0;
+      z-index: 75;
+      display: none;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      animation: fadeIn 180ms ease;
+    }
+    .picker-host.open { display: block; }
+
+    .picker {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-height: 80vh;
+      max-height: 80dvh;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border-strong);
+      border-radius: 12px 12px 0 0;
+      padding-bottom: var(--safe-bot);
+      animation: slideUp 280ms cubic-bezier(0.2, 0.85, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    @media (min-width: 1024px) {
+      .picker {
+        position: relative;
+        margin: auto;
+        max-width: 420px;
+        max-height: 70vh;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-strong);
+      }
+      .picker-host {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .picker-host.open { display: flex; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    .picker-grip {
+      width: 44px;
+      height: 4px;
+      background: var(--border-strong);
+      border-radius: 999px;
+      margin: 10px auto 0;
+      flex-shrink: 0;
+    }
+    @media (min-width: 1024px) {
+      .picker-grip { display: none; }
+    }
+    .picker-head {
+      padding: 14px 20px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .picker-head h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-1);
+    }
+    .picker-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .picker-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 160ms ease;
+      text-align: left;
+      width: 100%;
+    }
+    .picker-item:hover { background: var(--bg-hover); }
+    .picker-item .swatch {
+      width: 10px; height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .picker-item .picker-text {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 2px;
+      min-width: 0;
+    }
+    .picker-item .picker-name {
+      font-size: 14px;
+      color: var(--text-1);
+      font-weight: 500;
+    }
+    .picker-item .picker-sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.10em;
+      color: var(--text-4);
+      text-transform: uppercase;
+    }
+    .picker-item.is-current {
+      background: var(--bg-active);
+    }
+
+    /* ============================================================
+       OWNER CONTROL CARD (in feed area or as separate panel)
+       ============================================================ */
+    .danger-zone {
+      margin-top: 12px;
+      border: 1px solid rgba(200,54,74,0.22);
+      background: rgba(200,54,74,0.04);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .danger-zone .panel-head {
+      border-bottom-color: rgba(200,54,74,0.15);
+    }
+    .danger-zone .panel-title h2 { color: #ff8a9c; }
+    .danger-zone .panel-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 16px;
+    }
+    .danger-zone .danger-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      border-radius: var(--radius);
+    }
+    .danger-zone .danger-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .danger-zone .danger-text .label {
+      font-size: 13px;
+      color: var(--text-1);
+      font-weight: 500;
+    }
+    .danger-zone .danger-text .desc {
+      font-size: 11px;
+      color: var(--text-3);
+    }
+
+    .danger-btn {
+      padding: 8px 12px;
+      border: 1px solid rgba(200,54,74,0.3);
+      background: var(--danger-soft);
+      color: #ff6c80;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 180ms ease;
+      flex-shrink: 0;
+    }
+    .danger-btn:hover {
+      background: rgba(200,54,74,0.18);
+      border-color: rgba(200,54,74,0.5);
+    }
+
+    /* ============================================================
+       MISC
+       ============================================================ */
+    .hidden { display: none !important; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      color: var(--text-3);
+    }
+    .badge.success {
+      background: var(--success-soft);
+      border-color: rgba(58,174,95,0.3);
+      color: var(--success);
+    }
+    .badge.warn {
+      background: var(--accent-soft);
+      border-color: rgba(245,197,24,0.3);
+      color: var(--accent);
+    }
+    .badge.muted {
+      color: var(--text-4);
+    }
+
+    /* prevent text-selection on UI chrome but allow in editable */
+    header, nav, .panel-head, .filter-chip, .nav-btn, .icon-btn, .role-toggle {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- ====================================================
+         TOPBAR
+         ==================================================== -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <!-- minimalist spark icon -->
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M8 1.5L9.4 6.6L14.5 8L9.4 9.4L8 14.5L6.6 9.4L1.5 8L6.6 6.6L8 1.5Z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-name">QUARTERS · 01</div>
+          <div class="brand-sub">Operations Control</div>
+        </div>
+      </div>
+
+      <div class="topbar-spacer"></div>
+
+      <div class="system-pill" aria-label="System status">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span>System Active</span>
+      </div>
+
+      <button class="role-toggle" id="roleToggle" data-role="owner" aria-label="Switch role">
+        <span class="dot"></span>
+        <span id="roleLabel">Owner</span>
+      </button>
+
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path>
+        </svg>
+      </button>
+    </header>
+
+    <!-- ====================================================
+         MAIN
+         ==================================================== -->
+    <main class="main">
+
+      <!-- LEFT COLUMN — Overview / Stats (mobile: shown inside Map view) -->
+      <aside class="view active" data-view="map">
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Overview</h2>
+              <span class="code">SYS-01</span>
+            </div>
+            <span class="badge muted" id="lastSync">синх. сейчас</span>
+          </div>
+
+          <div class="overview">
+            <div class="progress-block">
+              <div class="progress-row">
+                <span class="label">Общий прогресс</span>
+                <span class="pct" id="overallPct">0%</span>
+              </div>
+              <div class="progress-bar"><div class="fill" id="overallFill" style="width:0%"></div></div>
+              <div class="progress-row">
+                <span class="label" style="text-transform:none; letter-spacing:0;" id="overallSub">0 из 9 зон завершено</span>
+                <span class="label" id="overallEta">—</span>
+              </div>
+            </div>
+
+            <div class="stat accent">
+              <span class="label">Активно</span>
+              <span class="value" id="statActive">0</span>
+              <span class="sub">in progress</span>
+            </div>
+            <div class="stat success">
+              <span class="label">Завершено</span>
+              <span class="value" id="statDone">0</span>
+              <span class="sub">completed</span>
+            </div>
+            <div class="stat">
+              <span class="label">Внимание</span>
+              <span class="value" id="statAttn">0</span>
+              <span class="sub">attention / rework</span>
+            </div>
+            <div class="stat">
+              <span class="label">Очередь</span>
+              <span class="value" id="statQueue">0</span>
+              <span class="sub">scheduled / idle</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- DANGER ZONE: Owner-only -->
+        <section class="panel danger-zone" id="dangerZone">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Control · Reset</h2>
+              <span class="code">CTL-99</span>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="danger-row">
+              <div class="danger-text">
+                <span class="label">Очистить активные</span>
+                <span class="desc">Сбросить in-progress / paused в idle</span>
+              </div>
+              <button class="danger-btn" data-action="clear-active">Очистить</button>
+            </div>
+            <div class="danger-row">
+              <div class="danger-text">
+                <span class="label">Архивировать и сбросить</span>
+                <span class="desc">Сохранить историю и обнулить карту</span>
+              </div>
+              <button class="danger-btn" data-action="archive-reset">Архив + Reset</button>
+            </div>
+            <div class="danger-row">
+              <div class="danger-text">
+                <span class="label">Полный сброс</span>
+                <span class="desc">Уничтожить все статусы и логи</span>
+              </div>
+              <button class="danger-btn" data-action="full-reset">Full Reset</button>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <!-- CENTER COLUMN — Interactive Map -->
+      <section class="view active" data-view="map">
+        <div class="panel map-panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Command Center</h2>
+              <span class="code">MAP-01</span>
+            </div>
+            <span class="badge" id="mapMeta">9 зон</span>
+          </div>
+
+          <div class="map-toolbar" role="tablist" aria-label="Filter zones">
+            <button class="filter-chip" data-filter="all" aria-pressed="true">
+              Все <span class="count" id="cnt-all">9</span>
+            </button>
+            <button class="filter-chip" data-filter="active" aria-pressed="false">
+              Активные <span class="count" id="cnt-active">0</span>
+            </button>
+            <button class="filter-chip" data-filter="completed" aria-pressed="false">
+              Готово <span class="count" id="cnt-completed">0</span>
+            </button>
+            <button class="filter-chip" data-filter="attention" aria-pressed="false">
+              Внимание <span class="count" id="cnt-attention">0</span>
+            </button>
+            <button class="filter-chip" data-filter="idle" aria-pressed="false">
+              Idle <span class="count" id="cnt-idle">9</span>
+            </button>
+          </div>
+
+          <div class="map-frame">
+            <div class="map-canvas">
+              <span class="map-corner tl">N · 01</span>
+              <span class="map-corner tr">8.6 × 10.9 m</span>
+              <span class="map-corner bl">FLOOR · 01</span>
+              <span class="map-corner br">SCALE · 1:50</span>
+
+              <svg class="map-svg" viewBox="0 0 600 800" xmlns="http://www.w3.org/2000/svg" aria-label="Apartment floor plan">
+                <!-- Filled below by JS for status reactivity, but base geometry here -->
+                <defs>
+                  <pattern id="hatch" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)">
+                    <line x1="0" y1="0" x2="0" y2="4" stroke="rgba(255,255,255,0.025)" stroke-width="1"/>
+                  </pattern>
+                </defs>
+
+                <!-- Doors — architectural swing arcs -->
+                <g id="doors">
+                  <!-- Маленькая → Коридор (hinge right, swings down) -->
+                  <line class="door-leaf" x1="153" y1="401" x2="153" y2="429"/>
+                  <path class="door-arc" d="M 153,429 A 28,28 0 0,0 125,401"/>
+
+                  <!-- Средняя → Коридор (hinge left, swings down) -->
+                  <line class="door-leaf" x1="375" y1="301" x2="375" y2="333"/>
+                  <path class="door-arc" d="M 375,333 A 32,32 0 0,1 407,301"/>
+
+                  <!-- Гардероб → Средняя (hinge top, swings left) -->
+                  <line class="door-leaf" x1="461" y1="200" x2="429" y2="200"/>
+                  <path class="door-arc" d="M 429,200 A 32,32 0 0,0 461,232"/>
+
+                  <!-- Прихожая → Коридор (hinge top, swings left) -->
+                  <line class="door-leaf" x1="461" y1="370" x2="429" y2="370"/>
+                  <path class="door-arc" d="M 429,370 A 32,32 0 0,0 461,402"/>
+
+                  <!-- Прихожая → выход (hinge top, swings left/inward) -->
+                  <line class="door-leaf" x1="585" y1="370" x2="549" y2="370"/>
+                  <path class="door-arc" d="M 549,370 A 36,36 0 0,0 585,406"/>
+
+                  <!-- Ванная → Коридор (hinge top, swings right) -->
+                  <line class="door-leaf" x1="161" y1="430" x2="189" y2="430"/>
+                  <path class="door-arc" d="M 189,430 A 28,28 0 0,1 161,458"/>
+
+                  <!-- Туалет → Коридор (hinge top, swings right) -->
+                  <line class="door-leaf" x1="161" y1="535" x2="189" y2="535"/>
+                  <path class="door-arc" d="M 189,535 A 28,28 0 0,1 161,563"/>
+
+                  <!-- Большая → Коридор (hinge right, swings down) -->
+                  <line class="door-leaf" x1="352" y1="453" x2="352" y2="485"/>
+                  <path class="door-arc" d="M 352,485 A 32,32 0 0,0 320,453"/>
+
+                  <!-- Кухня → Коридор (hinge right, swings up) -->
+                  <line class="door-leaf" x1="147" y1="597" x2="147" y2="565"/>
+                  <path class="door-arc" d="M 147,565 A 32,32 0 0,1 115,597"/>
+                </g>
+
+                <!-- Rooms group: filled by JS -->
+                <g id="rooms"></g>
+              </svg>
+            </div>
+          </div>
+
+          <div class="legend" aria-label="Status legend">
+            <span class="legend-item"><span class="swatch" style="background:var(--status-idle)"></span> Idle</span>
+            <span class="legend-item"><span class="swatch" style="background:var(--status-scheduled)"></span> Scheduled</span>
+            <span class="legend-item"><span class="swatch" style="background:var(--status-progress)"></span> In Progress</span>
+            <span class="legend-item"><span class="swatch" style="background:var(--status-paused)"></span> Paused</span>
+            <span class="legend-item"><span class="swatch" style="background:var(--status-attention)"></span> Attention</span>
+            <span class="legend-item"><span class="swatch" style="background:var(--status-rework)"></span> Rework</span>
+            <span class="legend-item"><span class="swatch" style="background:var(--status-completed)"></span> Completed</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN — Operations feed (mobile: hidden, separate view) -->
+      <aside class="view" data-view="feed">
+        <section class="panel feed-panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Operations Feed</h2>
+              <span class="code">OPS-01</span>
+            </div>
+            <span class="badge" id="feedMeta">live</span>
+          </div>
+          <div class="feed" id="feed"></div>
+        </section>
+      </aside>
+
+      <!-- MOBILE — History view -->
+      <aside class="view" data-view="history">
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>History</h2>
+              <span class="code">HIS-01</span>
+            </div>
+          </div>
+          <div class="feed" id="history"></div>
+        </section>
+      </aside>
+    </main>
+
+    <!-- ====================================================
+         BOTTOM NAV
+         ==================================================== -->
+    <nav class="bottomnav" aria-label="Primary">
+      <button class="nav-btn" data-target="map" aria-pressed="true" aria-label="Map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/>
+          <path d="M9 3v15M15 6v15"/>
+        </svg>
+        <span>Map</span>
+      </button>
+      <button class="nav-btn" data-target="feed" aria-pressed="false" aria-label="Operations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l3 7 7 .8-5.4 4.7L18 22l-6-3.5L6 22l1.4-7.5L2 9.8 9 9z"/>
+        </svg>
+        <span>Ops</span>
+      </button>
+      <button class="nav-btn" data-target="history" aria-pressed="false" aria-label="History">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+          <path d="M3 3v5h5"/>
+          <path d="M12 7v5l3 2"/>
+        </svg>
+        <span>History</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ====================================================
+       ROOM DETAIL DRAWER
+       ==================================================== -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+    <div class="drawer-grip" aria-hidden="true"></div>
+
+    <div class="drawer-head">
+      <div class="drawer-title-block">
+        <div class="drawer-eyebrow">
+          <span class="code" id="drawerCode">BR-01</span>
+          <span id="drawerArea">— м²</span>
+        </div>
+        <h2 class="drawer-title" id="drawerTitle">—</h2>
+      </div>
+
+      <button class="drawer-close" id="drawerClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <div class="status-card" id="statusCard">
+        <div class="indicator" id="statusIndicator">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+          </svg>
+        </div>
+        <div class="info">
+          <span class="label">Текущий статус</span>
+          <span class="value" id="statusValue">Не начато</span>
+        </div>
+      </div>
+
+      <div class="detail-list">
+        <div class="detail-row">
+          <span class="k">Operation</span>
+          <span class="v" id="detailOperation">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="k">Operator</span>
+          <span class="v muted" id="detailOperator">не назначен</span>
+        </div>
+        <div class="detail-row">
+          <span class="k">Started</span>
+          <span class="v mono" id="detailStarted">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="k">Updated</span>
+          <span class="v mono" id="detailUpdated">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="k">Notes</span>
+          <span class="v muted" id="detailNotes">—</span>
+        </div>
+      </div>
+
+      <div class="sub-title">Журнал по зоне</div>
+      <div class="timeline" id="roomTimeline">
+        <div class="timeline-empty">Записей пока нет.</div>
+      </div>
+    </div>
+
+    <div class="drawer-actions" id="drawerActions">
+      <div class="btn-row">
+        <button class="btn btn-secondary" data-action="pick-operation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Operation
+        </button>
+        <button class="btn btn-secondary" data-action="pick-status">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          Status
+        </button>
+      </div>
+      <button class="btn btn-primary" data-action="toggle-progress" id="btnTogglePrimary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z" fill="currentColor"/></svg>
+        Запустить операцию
+      </button>
+      <button class="btn btn-danger" data-action="reset-room">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        Сбросить зону
+      </button>
+    </div>
+  </aside>
+
+  <!-- ====================================================
+       OPERATION / STATUS PICKER
+       ==================================================== -->
+  <div class="picker-host" id="pickerHost">
+    <div class="picker">
+      <div class="picker-grip" aria-hidden="true"></div>
+      <div class="picker-head">
+        <h3 id="pickerTitle">Выбор</h3>
+        <button class="icon-btn" id="pickerClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div class="picker-list" id="pickerList"></div>
+    </div>
+  </div>
+
+  <!-- ====================================================
+       CONFIRM DIALOG
+       ==================================================== -->
+  <div class="dialog-host" id="confirmHost" role="alertdialog" aria-modal="true">
+    <div class="dialog">
+      <div class="dialog-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+      </div>
+      <h3 id="confirmTitle">Подтверждение</h3>
+      <p id="confirmText">Продолжить действие?</p>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" id="confirmCancel">Отмена</button>
+        <button class="btn btn-danger" id="confirmOk">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================
+       TOAST HOST
+       ==================================================== -->
+  <div class="toast-host" id="toastHost" aria-live="polite"></div>
+
+  <!-- ====================================================
+       APP SCRIPT
+       ==================================================== -->
+  <script>
+    /* ============================================================
+       DOMAIN CONSTANTS
+       ============================================================ */
+
+    /** @typedef {'idle'|'scheduled'|'in_progress'|'paused'|'attention'|'postponed'|'rework'|'completed'} StatusKey */
+
+    const STATUSES = {
+      idle:        { label: 'Не начато',          sub: 'IDLE',        color: 'var(--status-idle)' },
+      scheduled:   { label: 'Запланировано',      sub: 'SCHEDULED',   color: 'var(--status-scheduled)' },
+      in_progress: { label: 'В процессе',         sub: 'IN PROGRESS', color: 'var(--status-progress)' },
+      paused:      { label: 'Пауза',              sub: 'PAUSED',      color: 'var(--status-paused)' },
+      attention:   { label: 'Требует внимания',   sub: 'ATTENTION',   color: 'var(--status-attention)' },
+      postponed:   { label: 'Отложено',           sub: 'POSTPONED',   color: 'var(--status-postponed)' },
+      rework:      { label: 'Повторная обработка', sub: 'REWORK',     color: 'var(--status-rework)' },
+      completed:   { label: 'Готово',             sub: 'COMPLETED',   color: 'var(--status-completed)' },
+    };
+
+    const OPERATIONS = [
+      { code: 'MTN-01', label: 'Поддерживающая уборка', sub: 'Maintenance Pass' },
+      { code: 'DEP-01', label: 'Глубокая уборка',       sub: 'Deep Cleaning Cycle' },
+      { code: 'WET-01', label: 'Влажная обработка',     sub: 'Wet Surface Treatment' },
+      { code: 'DRY-01', label: 'Сухая очистка',         sub: 'Dry Particle Extraction' },
+      { code: 'GLS-01', label: 'Очистка стекол и зеркал', sub: 'Glass & Mirror Treatment' },
+      { code: 'SAN-01', label: 'Санитарная обработка',  sub: 'Sanitary Treatment' },
+      { code: 'KIT-01', label: 'Кухонный цикл',         sub: 'Kitchen Operations' },
+      { code: 'TXT-01', label: 'Уход за текстилем',     sub: 'Textile Care' },
+      { code: 'EXP-01', label: 'Экспресс-уборка',       sub: 'Express Pass' },
+      { code: 'FUL-01', label: 'Полный цикл',           sub: 'Full Scope Cycle' },
+    ];
+
+    /**
+     * Floor plan geometry. Coordinates derived from user's layout sketch
+     * (red-bordered) with proportions cross-referenced to the dimensioned plan.
+     * Each room is a simple rect except the corridor which is an L-polygon.
+     */
+    const ROOMS = [
+      {
+        id: 'bedroom_small', code: 'BR-01',
+        name: 'Спальня Маленькая', short: 'Спальня M',
+        area: 11.5,
+        shape: { type: 'rect', x: 20,  y: 20,  w: 140, h: 380 },
+        labelAt: { x: 90,  y: 210 },
+      },
+      {
+        id: 'bedroom_medium', code: 'BR-02',
+        name: 'Спальня Средняя', short: 'Спальня S',
+        area: 14.0,
+        shape: { type: 'rect', x: 170, y: 20,  w: 290, h: 280 },
+        labelAt: { x: 315, y: 160 },
+      },
+      {
+        id: 'wardrobe', code: 'WD-01',
+        name: 'Гардероб', short: 'Гардероб',
+        area: 3.0,
+        shape: { type: 'rect', x: 470, y: 20,  w: 110, h: 280 },
+        labelAt: { x: 525, y: 160 },
+      },
+      {
+        id: 'entry', code: 'EN-01',
+        name: 'Прихожая', short: 'Прихожая',
+        area: 4.5,
+        shape: { type: 'rect', x: 470, y: 310, w: 110, h: 140 },
+        labelAt: { x: 525, y: 380 },
+      },
+      {
+        id: 'bath', code: 'BT-01',
+        name: 'Ванная', short: 'Ванная',
+        area: 2.6,
+        shape: { type: 'rect', x: 20,  y: 410, w: 140, h: 95  },
+        labelAt: { x: 90,  y: 458 },
+      },
+      {
+        id: 'wc', code: 'WC-01',
+        name: 'Туалет', short: 'Туалет',
+        area: 1.2,
+        shape: { type: 'rect', x: 20,  y: 515, w: 140, h: 75  },
+        labelAt: { x: 90,  y: 553 },
+      },
+      {
+        id: 'corridor', code: 'CR-01',
+        name: 'Коридор / Холл', short: 'Коридор',
+        area: 8.5,
+        shape: {
+          type: 'polygon',
+          // L-shape connecting rooms; matches user's red sketch
+          points: '170,310 460,310 460,450 210,450 210,600 170,600',
+        },
+        labelAt: { x: 320, y: 380 },
+      },
+      {
+        id: 'kitchen', code: 'KT-01',
+        name: 'Кухня', short: 'Кухня',
+        area: 10.2,
+        shape: { type: 'rect', x: 20,  y: 600, w: 180, h: 180 },
+        labelAt: { x: 110, y: 690 },
+      },
+      {
+        id: 'living', code: 'LR-01',
+        name: 'Спальня Большая / Гостиная', short: 'Гостиная',
+        area: 20.5,
+        shape: { type: 'rect', x: 220, y: 460, w: 360, h: 320 },
+        labelAt: { x: 400, y: 620 },
+      },
+    ];
+
+    /* ============================================================
+       APP STATE
+       ============================================================ */
+
+    /** @type {{role:'owner'|'viewer', filter:string, selectedRoomId:string|null, mobileView:string, rooms:Object, log:Array}} */
+    const state = {
+      role: 'owner',
+      filter: 'all',
+      selectedRoomId: null,
+      mobileView: 'map',
+      // Per-room state keyed by id
+      rooms: Object.fromEntries(ROOMS.map(r => [r.id, {
+        status: 'idle',
+        operation: null,        // OPERATIONS entry
+        operator: null,
+        notes: '',
+        startedAt: null,
+        updatedAt: null,
+        log: [],                // {ts, text, kind}
+      }])),
+      // Global operations feed (newest first)
+      log: [],
+    };
+
+    /* ============================================================
+       SEED — sample state so prototype isn't empty
+       ============================================================ */
+    function seed() {
+      const now = Date.now();
+      const min = (m) => now - m * 60000;
+
+      // Гардероб — in progress
+      state.rooms.wardrobe.status = 'in_progress';
+      state.rooms.wardrobe.operation = OPERATIONS.find(o => o.code === 'WET-01');
+      state.rooms.wardrobe.operator = 'А.К.';
+      state.rooms.wardrobe.notes = 'Влажная обработка полок и зеркал. Углы — отдельным проходом.';
+      state.rooms.wardrobe.startedAt = min(18);
+      state.rooms.wardrobe.updatedAt = min(2);
+      state.rooms.wardrobe.log = [
+        { ts: min(18), text: 'Запущена влажная обработка', kind: 'start' },
+        { ts: min(11), text: 'Полки протерты', kind: 'note' },
+        { ts: min(2),  text: 'Зеркала · второй проход', kind: 'note' },
+      ];
+
+      // Кухня — completed
+      state.rooms.kitchen.status = 'completed';
+      state.rooms.kitchen.operation = OPERATIONS.find(o => o.code === 'KIT-01');
+      state.rooms.kitchen.operator = 'А.К.';
+      state.rooms.kitchen.notes = 'Кухонный цикл закрыт. Плита и фартук обработаны.';
+      state.rooms.kitchen.startedAt = min(95);
+      state.rooms.kitchen.updatedAt = min(40);
+      state.rooms.kitchen.log = [
+        { ts: min(95), text: 'Запущен кухонный цикл', kind: 'start' },
+        { ts: min(72), text: 'Поверхности · готово', kind: 'note' },
+        { ts: min(55), text: 'Сантехника мойки · готово', kind: 'note' },
+        { ts: min(40), text: 'Цикл завершен', kind: 'complete' },
+      ];
+
+      // Гостиная — in progress
+      state.rooms.living.status = 'in_progress';
+      state.rooms.living.operation = OPERATIONS.find(o => o.code === 'MTN-01');
+      state.rooms.living.operator = 'А.К.';
+      state.rooms.living.startedAt = min(22);
+      state.rooms.living.updatedAt = min(5);
+      state.rooms.living.notes = 'Поддерживающая уборка. Ковер — пылесос, пол — влажная протирка.';
+      state.rooms.living.log = [
+        { ts: min(22), text: 'Старт операции MTN-01', kind: 'start' },
+        { ts: min(5),  text: 'Пол · в процессе', kind: 'note' },
+      ];
+
+      // Средняя — scheduled
+      state.rooms.bedroom_medium.status = 'scheduled';
+      state.rooms.bedroom_medium.operation = OPERATIONS.find(o => o.code === 'FUL-01');
+      state.rooms.bedroom_medium.notes = 'Запланирован полный цикл после завершения гостиной.';
+      state.rooms.bedroom_medium.updatedAt = min(30);
+
+      // Ванная — attention
+      state.rooms.bath.status = 'attention';
+      state.rooms.bath.notes = 'Требуется санитарная обработка швов.';
+      state.rooms.bath.updatedAt = min(60);
+
+      // Build global feed from per-room logs
+      state.log = [];
+      Object.entries(state.rooms).forEach(([id, r]) => {
+        r.log.forEach(entry => {
+          state.log.push({ ...entry, roomId: id });
+        });
+      });
+      state.log.sort((a, b) => b.ts - a.ts);
+    }
+
+    /* ============================================================
+       UTILS
+       ============================================================ */
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+    function fmtTime(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    }
+    function fmtRelative(ts) {
+      if (!ts) return '—';
+      const diff = Date.now() - ts;
+      const min = Math.round(diff / 60000);
+      if (min < 1) return 'только что';
+      if (min < 60) return `${min} мин назад`;
+      const h = Math.round(min / 60);
+      if (h < 24) return `${h} ч назад`;
+      return new Date(ts).toLocaleDateString('ru-RU');
+    }
+    function fmtDate(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts);
+      return `${fmtTime(ts)} · ${d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}`;
+    }
+
+    function getRoomDef(id) { return ROOMS.find(r => r.id === id); }
+
+    function isOwner() { return state.role === 'owner'; }
+
+    /* ============================================================
+       MAP RENDERING
+       ============================================================ */
+    function renderMap() {
+      const g = $('#rooms');
+      g.innerHTML = '';
+
+      ROOMS.forEach(def => {
+        const rs = state.rooms[def.id];
+        const filterPass = passesFilter(def.id);
+
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('class', 'room' + (state.selectedRoomId === def.id ? ' is-selected' : ''));
+        group.setAttribute('data-room', def.id);
+        group.setAttribute('data-status', rs.status);
+        group.style.opacity = filterPass ? '1' : '0.22';
+        group.style.transition = 'opacity 220ms ease';
+
+        // Shape
+        let shapeEl;
+        if (def.shape.type === 'rect') {
+          shapeEl = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          shapeEl.setAttribute('x', def.shape.x);
+          shapeEl.setAttribute('y', def.shape.y);
+          shapeEl.setAttribute('width', def.shape.w);
+          shapeEl.setAttribute('height', def.shape.h);
+          shapeEl.setAttribute('rx', '6');
+        } else {
+          shapeEl = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+          shapeEl.setAttribute('points', def.shape.points);
+        }
+        shapeEl.setAttribute('class', 'room-shape');
+        group.appendChild(shapeEl);
+
+        // Hatch overlay
+        let hatch;
+        if (def.shape.type === 'rect') {
+          hatch = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          hatch.setAttribute('x', def.shape.x);
+          hatch.setAttribute('y', def.shape.y);
+          hatch.setAttribute('width', def.shape.w);
+          hatch.setAttribute('height', def.shape.h);
+          hatch.setAttribute('rx', '6');
+        } else {
+          hatch = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+          hatch.setAttribute('points', def.shape.points);
+        }
+        hatch.setAttribute('fill', 'url(#hatch)');
+        hatch.setAttribute('pointer-events', 'none');
+        group.appendChild(hatch);
+
+        // Code label (small mono, top)
+        const codeLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        codeLabel.setAttribute('x', def.labelAt.x);
+        codeLabel.setAttribute('y', def.labelAt.y - 16);
+        codeLabel.setAttribute('text-anchor', 'middle');
+        codeLabel.setAttribute('class', 'room-code');
+        codeLabel.textContent = def.code;
+        group.appendChild(codeLabel);
+
+        // Name label
+        const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        nameLabel.setAttribute('x', def.labelAt.x);
+        nameLabel.setAttribute('y', def.labelAt.y);
+        nameLabel.setAttribute('text-anchor', 'middle');
+        nameLabel.setAttribute('class', 'room-label');
+        nameLabel.textContent = def.short;
+        group.appendChild(nameLabel);
+
+        // Area label
+        const areaLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        areaLabel.setAttribute('x', def.labelAt.x);
+        areaLabel.setAttribute('y', def.labelAt.y + 14);
+        areaLabel.setAttribute('text-anchor', 'middle');
+        areaLabel.setAttribute('class', 'room-area');
+        areaLabel.textContent = `${def.area} м²`;
+        group.appendChild(areaLabel);
+
+        // Status dot (top-right corner of bounding box)
+        const dotPos = getDotPosition(def);
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', dotPos.x);
+        dot.setAttribute('cy', dotPos.y);
+        dot.setAttribute('r', '3.5');
+        dot.setAttribute('class', 'status-dot');
+        group.appendChild(dot);
+
+        // Pulse ring (only visible for in_progress via CSS)
+        const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        ring.setAttribute('cx', dotPos.x);
+        ring.setAttribute('cy', dotPos.y);
+        ring.setAttribute('r', '4');
+        ring.setAttribute('class', 'pulse-ring');
+        group.appendChild(ring);
+
+        // Click
+        group.addEventListener('click', () => openRoom(def.id));
+
+        g.appendChild(group);
+      });
+    }
+
+    function getDotPosition(def) {
+      if (def.shape.type === 'rect') {
+        return { x: def.shape.x + def.shape.w - 12, y: def.shape.y + 12 };
+      }
+      // For polygon corridor, use a fixed offset
+      return { x: 450, y: 322 };
+    }
+
+    function passesFilter(roomId) {
+      const status = state.rooms[roomId].status;
+      switch (state.filter) {
+        case 'all':       return true;
+        case 'active':    return status === 'in_progress' || status === 'paused';
+        case 'completed': return status === 'completed';
+        case 'attention': return status === 'attention' || status === 'rework';
+        case 'idle':      return status === 'idle' || status === 'scheduled' || status === 'postponed';
+        default:          return true;
+      }
+    }
+
+    /* ============================================================
+       STATS
+       ============================================================ */
+    function renderStats() {
+      const all = Object.values(state.rooms);
+      const counts = {
+        all:        all.length,
+        active:     all.filter(r => r.status === 'in_progress' || r.status === 'paused').length,
+        completed:  all.filter(r => r.status === 'completed').length,
+        attention:  all.filter(r => r.status === 'attention' || r.status === 'rework').length,
+        idle:       all.filter(r => ['idle','scheduled','postponed'].includes(r.status)).length,
+      };
+
+      $('#cnt-all').textContent       = counts.all;
+      $('#cnt-active').textContent    = counts.active;
+      $('#cnt-completed').textContent = counts.completed;
+      $('#cnt-attention').textContent = counts.attention;
+      $('#cnt-idle').textContent      = counts.idle;
+
+      $('#statActive').textContent = counts.active;
+      $('#statDone').textContent   = counts.completed;
+      $('#statAttn').textContent   = counts.attention;
+      $('#statQueue').textContent  = counts.idle;
+
+      const pct = Math.round((counts.completed / counts.all) * 100);
+      $('#overallPct').textContent  = pct + '%';
+      $('#overallFill').style.width = pct + '%';
+      $('#overallSub').textContent  = `${counts.completed} из ${counts.all} зон завершено`;
+      $('#overallEta').textContent  = counts.active > 0 ? `${counts.active} в работе` : 'нет активных';
+
+      $('#mapMeta').textContent = `${counts.all} зон`;
+    }
+
+    /* ============================================================
+       FEEDS
+       ============================================================ */
+    function renderFeed(target = '#feed', max = 30) {
+      const container = $(target);
+      container.innerHTML = '';
+
+      if (state.log.length === 0) {
+        container.innerHTML = `<div class="feed-empty">Пока без активности.</div>`;
+        return;
+      }
+
+      const items = state.log.slice(0, max);
+      items.forEach((entry, idx) => {
+        const def = getRoomDef(entry.roomId);
+        const isLast = idx === items.length - 1;
+        const dotColor = entry.kind === 'complete'
+          ? 'var(--status-completed)'
+          : entry.kind === 'start'
+          ? 'var(--status-progress)'
+          : entry.kind === 'attention'
+          ? 'var(--status-attention)'
+          : 'var(--text-3)';
+
+        const el = document.createElement('div');
+        el.className = 'feed-item';
+        el.innerHTML = `
+          <div class="feed-mark">
+            <div class="dot" style="background:${dotColor}"></div>
+            ${isLast ? '' : '<div class="line"></div>'}
+          </div>
+          <div class="feed-body">
+            <div class="feed-time">${fmtRelative(entry.ts)} · ${fmtTime(entry.ts)}</div>
+            <div class="feed-title">${escapeHtml(entry.text)}</div>
+            <div class="feed-room">
+              <span>${escapeHtml(def?.name ?? entry.roomId)}</span>
+              <span class="sep">·</span>
+              <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;color:var(--text-4)">${def?.code ?? ''}</span>
+            </div>
+          </div>
+        `;
+        el.addEventListener('click', () => openRoom(entry.roomId));
+        container.appendChild(el);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[m]));
+    }
+
+    /* ============================================================
+       DRAWER (room detail)
+       ============================================================ */
+    function openRoom(id) {
+      state.selectedRoomId = id;
+      const def = getRoomDef(id);
+      const rs  = state.rooms[id];
+
+      $('#drawerCode').textContent  = def.code;
+      $('#drawerArea').textContent  = `${def.area} м²`;
+      $('#drawerTitle').textContent = def.name;
+
+      // Status card
+      const status = STATUSES[rs.status];
+      $('#statusValue').textContent = status.label;
+      const indicator = $('#statusIndicator');
+      indicator.style.background = `color-mix(in oklab, ${status.color} 18%, transparent)`;
+      indicator.style.color = status.color;
+      indicator.style.border = `1px solid color-mix(in oklab, ${status.color} 36%, transparent)`;
+
+      // Detail rows
+      $('#detailOperation').textContent = rs.operation
+        ? `${rs.operation.label} · ${rs.operation.code}`
+        : '—';
+      $('#detailOperation').className = rs.operation ? 'v' : 'v muted';
+
+      $('#detailOperator').textContent = rs.operator || 'не назначен';
+      $('#detailOperator').className   = rs.operator ? 'v' : 'v muted';
+
+      $('#detailStarted').textContent = fmtDate(rs.startedAt);
+      $('#detailUpdated').textContent = fmtDate(rs.updatedAt);
+
+      $('#detailNotes').textContent = rs.notes || '—';
+      $('#detailNotes').className   = rs.notes ? 'v' : 'v muted';
+
+      // Timeline
+      const tl = $('#roomTimeline');
+      if (rs.log.length === 0) {
+        tl.innerHTML = `<div class="timeline-empty">Записей пока нет.</div>`;
+      } else {
+        tl.innerHTML = rs.log.slice().reverse().map(entry => {
+          const cls = entry.kind === 'complete' ? 'is-completed'
+                    : entry.kind === 'start' ? 'is-active'
+                    : '';
+          return `
+            <div class="timeline-item ${cls}">
+              <div class="timeline-time">${fmtTime(entry.ts)} · ${fmtRelative(entry.ts)}</div>
+              <div class="timeline-text">${escapeHtml(entry.text)}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Update primary action label
+      const primary = $('#btnTogglePrimary');
+      if (rs.status === 'in_progress') {
+        primary.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/></svg>
+          Поставить на паузу
+        `;
+      } else if (rs.status === 'completed') {
+        primary.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          Открыть заново
+        `;
+      } else {
+        primary.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z" fill="currentColor"/></svg>
+          Запустить операцию
+        `;
+      }
+
+      // Owner gate for actions area
+      const actions = $('#drawerActions');
+      if (isOwner()) {
+        actions.innerHTML = `
+          <div class="btn-row">
+            <button class="btn btn-secondary" data-action="pick-operation">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              Operation
+            </button>
+            <button class="btn btn-secondary" data-action="pick-status">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+              Status
+            </button>
+          </div>
+          <button class="btn btn-primary" data-action="toggle-progress" id="btnTogglePrimary">
+            ${primary.innerHTML}
+          </button>
+          <button class="btn btn-danger" data-action="reset-room">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            Сбросить зону
+          </button>
+        `;
+        bindDrawerActions();
+      } else {
+        actions.innerHTML = `
+          <div class="viewer-notice">VIEWER MODE · действия недоступны</div>
+        `;
+      }
+
+      // Re-render map to highlight selected
+      renderMap();
+
+      $('#drawerBackdrop').classList.add('open');
+      $('#drawer').classList.add('open');
+    }
+
+    function closeDrawer() {
+      $('#drawerBackdrop').classList.remove('open');
+      $('#drawer').classList.remove('open');
+      state.selectedRoomId = null;
+      renderMap();
+    }
+
+    function bindDrawerActions() {
+      $$('#drawerActions [data-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!isOwner()) return;
+          const a = btn.dataset.action;
+          if (a === 'pick-operation') openOperationPicker();
+          else if (a === 'pick-status') openStatusPicker();
+          else if (a === 'toggle-progress') toggleProgress();
+          else if (a === 'reset-room') confirmResetRoom();
+        });
+      });
+    }
+
+    /* ============================================================
+       OPERATIONS
+       ============================================================ */
+    function logRoom(id, text, kind = 'note') {
+      const ts = Date.now();
+      state.rooms[id].log.push({ ts, text, kind });
+      state.rooms[id].updatedAt = ts;
+      state.log.unshift({ ts, text, kind, roomId: id });
+    }
+
+    function changeStatus(id, newStatus) {
+      const rs = state.rooms[id];
+      const prev = rs.status;
+      if (prev === newStatus) return;
+      rs.status = newStatus;
+      rs.updatedAt = Date.now();
+      if (newStatus === 'in_progress' && !rs.startedAt) rs.startedAt = Date.now();
+      const kind = newStatus === 'completed' ? 'complete'
+                 : newStatus === 'in_progress' ? 'start'
+                 : newStatus === 'attention' ? 'attention'
+                 : 'note';
+      logRoom(id, `Статус: ${STATUSES[prev].label} → ${STATUSES[newStatus].label}`, kind);
+      refreshAll();
+      toast(`${getRoomDef(id).short} · ${STATUSES[newStatus].label}`,
+            newStatus === 'completed' ? 'success' : newStatus === 'attention' ? 'danger' : 'warn');
+    }
+
+    function setOperation(id, op) {
+      const rs = state.rooms[id];
+      rs.operation = op;
+      logRoom(id, `Назначена операция: ${op.label} · ${op.code}`, 'note');
+      refreshAll();
+      toast(`${getRoomDef(id).short} · ${op.label}`, 'warn');
+    }
+
+    function toggleProgress() {
+      if (!state.selectedRoomId) return;
+      const rs = state.rooms[state.selectedRoomId];
+      if (rs.status === 'in_progress') {
+        changeStatus(state.selectedRoomId, 'paused');
+      } else if (rs.status === 'completed') {
+        changeStatus(state.selectedRoomId, 'in_progress');
+      } else {
+        if (!rs.operation) {
+          // ensure an operation is set; default to maintenance
+          rs.operation = OPERATIONS[0];
+        }
+        changeStatus(state.selectedRoomId, 'in_progress');
+      }
+      openRoom(state.selectedRoomId);
+    }
+
+    function confirmResetRoom() {
+      if (!state.selectedRoomId) return;
+      const def = getRoomDef(state.selectedRoomId);
+      confirm({
+        title: 'Сбросить зону?',
+        text: `Зона «${def.name}» будет переведена в Idle. История останется.`,
+        ok: 'Сбросить',
+        onOk: () => {
+          const id = state.selectedRoomId;
+          const rs = state.rooms[id];
+          rs.status = 'idle';
+          rs.operation = null;
+          rs.operator = null;
+          rs.notes = '';
+          rs.startedAt = null;
+          rs.updatedAt = Date.now();
+          logRoom(id, 'Зона сброшена в Idle', 'note');
+          refreshAll();
+          openRoom(id);
+          toast(`${def.short} · сброшена`, 'warn');
+        },
+      });
+    }
+
+    /* ============================================================
+       PICKERS (status / operation)
+       ============================================================ */
+    function openStatusPicker() {
+      $('#pickerTitle').textContent = 'Сменить статус';
+      const list = $('#pickerList');
+      const cur = state.rooms[state.selectedRoomId].status;
+      list.innerHTML = '';
+      Object.entries(STATUSES).forEach(([key, s]) => {
+        const item = document.createElement('button');
+        item.className = 'picker-item' + (key === cur ? ' is-current' : '');
+        item.innerHTML = `
+          <span class="swatch" style="background:${s.color}"></span>
+          <span class="picker-text">
+            <span class="picker-name">${s.label}</span>
+            <span class="picker-sub">${s.sub}</span>
+          </span>
+        `;
+        item.addEventListener('click', () => {
+          changeStatus(state.selectedRoomId, key);
+          openRoom(state.selectedRoomId);
+          closePicker();
+        });
+        list.appendChild(item);
+      });
+      openPicker();
+    }
+
+    function openOperationPicker() {
+      $('#pickerTitle').textContent = 'Выбрать операцию';
+      const list = $('#pickerList');
+      const cur  = state.rooms[state.selectedRoomId].operation?.code;
+      list.innerHTML = '';
+      OPERATIONS.forEach(op => {
+        const item = document.createElement('button');
+        item.className = 'picker-item' + (op.code === cur ? ' is-current' : '');
+        item.innerHTML = `
+          <span class="swatch" style="background:var(--accent); opacity:.85"></span>
+          <span class="picker-text">
+            <span class="picker-name">${op.label}</span>
+            <span class="picker-sub">${op.code} · ${op.sub}</span>
+          </span>
+        `;
+        item.addEventListener('click', () => {
+          setOperation(state.selectedRoomId, op);
+          openRoom(state.selectedRoomId);
+          closePicker();
+        });
+        list.appendChild(item);
+      });
+      openPicker();
+    }
+
+    function openPicker() { $('#pickerHost').classList.add('open'); }
+    function closePicker() { $('#pickerHost').classList.remove('open'); }
+
+    /* ============================================================
+       CONFIRM DIALOG
+       ============================================================ */
+    let _confirmCb = null;
+    function confirm({ title, text, ok = 'OK', onOk }) {
+      $('#confirmTitle').textContent = title;
+      $('#confirmText').textContent  = text;
+      $('#confirmOk').textContent    = ok;
+      _confirmCb = onOk;
+      $('#confirmHost').classList.add('open');
+    }
+    function closeConfirm() { $('#confirmHost').classList.remove('open'); _confirmCb = null; }
+
+    /* ============================================================
+       TOAST
+       ============================================================ */
+    function toast(message, kind = 'success', timeout = 2600) {
+      const host = $('#toastHost');
+      const el = document.createElement('div');
+      el.className = `toast ${kind}`;
+      el.innerHTML = `<span class="toast-dot"></span><span>${escapeHtml(message)}</span>`;
+      host.appendChild(el);
+      setTimeout(() => {
+        el.classList.add('leaving');
+        setTimeout(() => el.remove(), 250);
+      }, timeout);
+    }
+
+    /* ============================================================
+       DANGER ZONE actions
+       ============================================================ */
+    function clearActiveSession() {
+      Object.entries(state.rooms).forEach(([id, rs]) => {
+        if (rs.status === 'in_progress' || rs.status === 'paused') {
+          rs.status = 'idle';
+          rs.updatedAt = Date.now();
+          logRoom(id, 'Активная сессия очищена', 'note');
+        }
+      });
+      refreshAll();
+      toast('Активные сессии очищены', 'warn');
+    }
+    function archiveAndReset() {
+      // In real backend: write current state to history archive first
+      const ts = Date.now();
+      Object.entries(state.rooms).forEach(([id, rs]) => {
+        rs.status = 'idle';
+        rs.operation = null;
+        rs.operator = null;
+        rs.notes = '';
+        rs.startedAt = null;
+        rs.updatedAt = ts;
+      });
+      // history is preserved in state.log
+      refreshAll();
+      toast('Карта сброшена · история сохранена', 'warn');
+    }
+    function fullReset() {
+      const ts = Date.now();
+      Object.values(state.rooms).forEach(rs => {
+        rs.status = 'idle';
+        rs.operation = null;
+        rs.operator = null;
+        rs.notes = '';
+        rs.startedAt = null;
+        rs.updatedAt = ts;
+        rs.log = [];
+      });
+      state.log = [];
+      refreshAll();
+      toast('Полный сброс выполнен', 'danger');
+    }
+
+    /* ============================================================
+       ROLE / VIEW SWITCHING
+       ============================================================ */
+    function setRole(role) {
+      state.role = role;
+      const t = $('#roleToggle');
+      t.dataset.role = role;
+      $('#roleLabel').textContent = role === 'owner' ? 'Owner' : 'Viewer';
+      // Hide danger zone for viewers
+      $('#dangerZone').style.display = role === 'owner' ? '' : 'none';
+      // If drawer is open, refresh to update actions
+      if (state.selectedRoomId) openRoom(state.selectedRoomId);
+      toast(`Режим: ${role === 'owner' ? 'Owner · полный доступ' : 'Viewer · только просмотр'}`,
+            role === 'owner' ? 'success' : 'warn');
+    }
+
+    function setMobileView(view) {
+      state.mobileView = view;
+      $$('.view').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+      $$('.nav-btn').forEach(btn => btn.setAttribute('aria-pressed', String(btn.dataset.target === view)));
+      // History view uses same renderer but full log
+      if (view === 'history') renderFeed('#history', 100);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setFilter(filter) {
+      state.filter = filter;
+      $$('.filter-chip').forEach(chip =>
+        chip.setAttribute('aria-pressed', String(chip.dataset.filter === filter))
+      );
+      renderMap();
+    }
+
+    /* ============================================================
+       MASTER REFRESH
+       ============================================================ */
+    function refreshAll() {
+      renderMap();
+      renderStats();
+      renderFeed('#feed');
+      if (state.mobileView === 'history') renderFeed('#history', 100);
+
+      // Last sync clock
+      const now = new Date();
+      $('#lastSync').textContent = `обнов. ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    }
+
+    /* ============================================================
+       BIND
+       ============================================================ */
+    function bind() {
+      // Filters
+      $$('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => setFilter(chip.dataset.filter));
+      });
+
+      // Bottom nav
+      $$('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => setMobileView(btn.dataset.target));
+      });
+
+      // Role toggle
+      $('#roleToggle').addEventListener('click', () => {
+        setRole(state.role === 'owner' ? 'viewer' : 'owner');
+      });
+
+      // Drawer
+      $('#drawerClose').addEventListener('click', closeDrawer);
+      $('#drawerBackdrop').addEventListener('click', closeDrawer);
+
+      // Initial drawer actions binding (in case drawer is opened before)
+      bindDrawerActions();
+
+      // Picker
+      $('#pickerClose').addEventListener('click', closePicker);
+      $('#pickerHost').addEventListener('click', (e) => {
+        if (e.target === $('#pickerHost')) closePicker();
+      });
+
+      // Confirm
+      $('#confirmCancel').addEventListener('click', closeConfirm);
+      $('#confirmOk').addEventListener('click', () => {
+        const cb = _confirmCb;
+        closeConfirm();
+        cb && cb();
+      });
+      $('#confirmHost').addEventListener('click', (e) => {
+        if (e.target === $('#confirmHost')) closeConfirm();
+      });
+
+      // Danger zone
+      $$('#dangerZone [data-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!isOwner()) return;
+          const a = btn.dataset.action;
+          if (a === 'clear-active') {
+            confirm({
+              title: 'Очистить активные сессии?',
+              text: 'Все зоны с in_progress / paused будут возвращены в Idle. История сохранится.',
+              ok: 'Очистить',
+              onOk: clearActiveSession,
+            });
+          } else if (a === 'archive-reset') {
+            confirm({
+              title: 'Архивировать и сбросить?',
+              text: 'Текущее состояние карты будет архивировано, статусы обнулены. История останется.',
+              ok: 'Архив + Reset',
+              onOk: archiveAndReset,
+            });
+          } else if (a === 'full-reset') {
+            confirm({
+              title: 'Полный сброс?',
+              text: 'ВСЕ статусы и логи будут стерты без возможности восстановления.',
+              ok: 'Стереть всё',
+              onOk: fullReset,
+            });
+          }
+        });
+      });
+
+      // ESC closes layered UI
+      window.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if ($('#confirmHost').classList.contains('open')) return closeConfirm();
+        if ($('#pickerHost').classList.contains('open'))  return closePicker();
+        if ($('#drawer').classList.contains('open'))      return closeDrawer();
+      });
+
+      // Settings = stub toast for now
+      $('#settingsBtn').addEventListener('click', () => {
+        toast('Settings · добавим в Claude Code', 'warn');
+      });
+    }
+
+    /* ============================================================
+       INIT
+       ============================================================ */
+    function init() {
+      seed();
+      bind();
+      refreshAll();
+      setRole('owner');
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
