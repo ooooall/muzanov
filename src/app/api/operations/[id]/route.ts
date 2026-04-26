@@ -1,0 +1,23 @@
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: op } = await supabase
+    .from('operation_types')
+    .select('is_system, created_by')
+    .eq('id', id)
+    .single()
+
+  if (!op) return NextResponse.json({ error: 'Не найдено' }, { status: 404 })
+  if (op.is_system) return NextResponse.json({ error: 'Системные операции нельзя удалять' }, { status: 403 })
+  if (op.created_by !== user.id) return NextResponse.json({ error: 'Нельзя удалять чужие операции' }, { status: 403 })
+
+  const { error } = await supabase.from('operation_types').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}

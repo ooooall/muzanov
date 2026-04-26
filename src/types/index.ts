@@ -4,6 +4,7 @@ export type { Database, Tables, TablesInsert, TablesUpdate, Enums } from './data
 import type { Tables } from './database.types'
 
 export type Profile = Tables<'profiles'>
+export type ProfileStatus = 'pending' | 'active' | 'rejected'
 export type Zone = Tables<'zones'>
 export type ZoneState = Tables<'zone_states'>
 export type OperationType = Tables<'operation_types'>

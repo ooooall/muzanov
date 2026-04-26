@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           id: string
           role: 'viewer' | 'worker' | 'taskmaster'
+          status: 'pending' | 'active' | 'rejected'
           display_name: string | null
           avatar_url: string | null
           created_at: string
@@ -21,6 +22,7 @@ export type Database = {
         Insert: {
           id: string
           role?: 'viewer' | 'worker' | 'taskmaster'
+          status?: 'pending' | 'active' | 'rejected'
           display_name?: string | null
           avatar_url?: string | null
           created_at?: string
@@ -29,6 +31,7 @@ export type Database = {
         Update: {
           id?: string
           role?: 'viewer' | 'worker' | 'taskmaster'
+          status?: 'pending' | 'active' | 'rejected'
           display_name?: string | null
           avatar_url?: string | null
           updated_at?: string
@@ -72,6 +75,8 @@ export type Database = {
           code: string
           label: string
           sub_label: string | null
+          is_system: boolean
+          created_by: string | null
           created_at: string
         }
         Insert: {
@@ -79,12 +84,16 @@ export type Database = {
           code: string
           label: string
           sub_label?: string | null
+          is_system?: boolean
+          created_by?: string | null
           created_at?: string
         }
         Update: {
           code?: string
           label?: string
           sub_label?: string | null
+          is_system?: boolean
+          created_by?: string | null
         }
         Relationships: []
       }
