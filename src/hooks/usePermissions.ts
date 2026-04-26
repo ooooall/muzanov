@@ -13,19 +13,32 @@ export function useRole() {
     const supabase = createClient()
 
     async function loadRole() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) {
+          setRole(null)
+          setLoading(false)
+          return
+        }
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (error) {
+          setRole(null)
+          setLoading(false)
+          return
+        }
+
+        setRole((data?.role as UserRole) ?? 'viewer')
+      } catch {
         setRole(null)
+      } finally {
         setLoading(false)
-        return
       }
-      const { data } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-      setRole((data?.role as UserRole) ?? 'viewer')
-      setLoading(false)
     }
 
     loadRole()

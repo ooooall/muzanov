@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { FloorPlan } from '@/components/map/FloorPlan'
 import { MapControls } from '@/components/map/MapControls'
 import { OverviewPanel } from '@/components/panels/OverviewPanel'
@@ -32,74 +32,97 @@ export function TaskMasterDashboard({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const supabase = createClient()
 
-  const stats = {
-    in_progress: zones.filter(z => z.status === 'in_progress').length,
-    attention:   zones.filter(z => z.status === 'attention').length,
-    completed:   zones.filter(z => z.status === 'completed').length,
-    idle:        zones.filter(z => z.status === 'idle').length,
-  }
+  const stats = useMemo(() => ({
+    in_progress: zones.filter((z) => z.status === 'in_progress').length,
+    attention: zones.filter((z) => z.status === 'attention').length,
+    completed: zones.filter((z) => z.status === 'completed').length,
+    idle: zones.filter((z) => z.status === 'idle').length,
+  }), [zones])
 
-  async function handleAssignOperation(zoneId: string, opCode: string) {
-    const { data: opType } = await supabase.from('operation_types').select('id').eq('code', opCode).single()
-    if (!opType) { toast.error('Операция не найдена'); return }
+  const handleAssignOperation = useCallback(async (zoneId: string, opCode: string) => {
+    try {
+      const { data: opType } = await supabase.from('operation_types').select('id').eq('code', opCode).single()
+      if (!opType) { toast.error('Операция не найдена'); return }
 
-    const update: TablesUpdate<'zone_states'> = { operation_type_id: opType.id, updated_at: new Date().toISOString() }
-    const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
+      const update: TablesUpdate<'zone_states'> = { operation_type_id: opType.id, updated_at: new Date().toISOString() }
+      const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
 
-    if (!error) {
-      const log: TablesInsert<'activity_log'> = {
-        zone_id: zoneId, user_id: userId,
-        action: 'operation_assigned', details: { op_code: opCode },
+      if (!error) {
+        const log: TablesInsert<'activity_log'> = {
+          zone_id: zoneId, user_id: userId,
+          action: 'operation_assigned', details: { op_code: opCode },
+        }
+        await supabase.from('activity_log').insert(log)
+        toast.success(`Операция ${opCode} назначена`)
+        onRefresh()
+      } else {
+        toast.error('Ошибка назначения')
       }
-      await supabase.from('activity_log').insert(log)
-      toast.success(`Операция ${opCode} назначена`)
-      onRefresh()
-    } else {
-      toast.error('Ошибка назначения')
+    } catch {
+      toast.error('Сетевая ошибка при назначении операции')
     }
-  }
+  }, [onRefresh, supabase, userId])
 
-  async function handleAssignWorker(zoneId: string, workerId: string | null) {
-    const update: TablesUpdate<'zone_states'> = { assigned_worker_id: workerId, updated_at: new Date().toISOString() }
-    const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
-    if (!error) {
-      const log: TablesInsert<'activity_log'> = {
-        zone_id: zoneId, user_id: userId,
-        action: 'worker_assigned', details: { worker_id: workerId },
+  const handleAssignWorker = useCallback(async (zoneId: string, workerId: string | null) => {
+    try {
+      const update: TablesUpdate<'zone_states'> = { assigned_worker_id: workerId, updated_at: new Date().toISOString() }
+      const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
+      if (!error) {
+        const log: TablesInsert<'activity_log'> = {
+          zone_id: zoneId, user_id: userId,
+          action: 'worker_assigned', details: { worker_id: workerId },
+        }
+        await supabase.from('activity_log').insert(log)
+        toast.success(workerId ? 'Исполнитель назначен' : 'Исполнитель снят')
+        onRefresh()
+      } else {
+        toast.error('Ошибка назначения исполнителя')
       }
-      await supabase.from('activity_log').insert(log)
-      toast.success(workerId ? 'Исполнитель назначен' : 'Исполнитель снят')
-      onRefresh()
+    } catch {
+      toast.error('Сетевая ошибка при назначении исполнителя')
     }
-  }
+  }, [onRefresh, supabase, userId])
 
-  async function handleSaveNote(zoneId: string, note: string) {
-    const update: TablesUpdate<'zone_states'> = { notes: note, updated_at: new Date().toISOString() }
-    const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
-    if (!error) {
-      const log: TablesInsert<'activity_log'> = {
-        zone_id: zoneId, user_id: userId,
-        action: 'note_added', details: { note },
+  const handleSaveNote = useCallback(async (zoneId: string, note: string) => {
+    try {
+      const update: TablesUpdate<'zone_states'> = { notes: note, updated_at: new Date().toISOString() }
+      const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
+      if (!error) {
+        const log: TablesInsert<'activity_log'> = {
+          zone_id: zoneId, user_id: userId,
+          action: 'note_added', details: { note },
+        }
+        await supabase.from('activity_log').insert(log)
+        onRefresh()
       }
-      await supabase.from('activity_log').insert(log)
-      onRefresh()
+      return error
+    } catch {
+      return { message: 'network_error' }
     }
-    return error
-  }
+  }, [onRefresh, supabase, userId])
 
-  async function handleClearAll() {
+  const handleClearAll = useCallback(async () => {
     if (!confirm('Сбросить все зоны в статус "Не начато"? Это действие нельзя отменить.')) return
-    const update: TablesUpdate<'zone_states'> = {
-      status: 'idle',
-      operation_type_id: null,
-      assigned_worker_id: null,
-      notes: null,
-      started_at: null,
-      updated_at: new Date().toISOString(),
+    try {
+      const update: TablesUpdate<'zone_states'> = {
+        status: 'idle',
+        operation_type_id: null,
+        assigned_worker_id: null,
+        notes: null,
+        started_at: null,
+        updated_at: new Date().toISOString(),
+      }
+      const { error } = await supabase.from('zone_states').update(update).neq('zone_id', '')
+      if (!error) {
+        toast.success('Все зоны сброшены')
+        onRefresh()
+      } else {
+        toast.error('Ошибка сброса зон')
+      }
+    } catch {
+      toast.error('Сетевая ошибка при сбросе зон')
     }
-    const { error } = await supabase.from('zone_states').update(update).neq('zone_id', '')
-    if (!error) { toast.success('Все зоны сброшены'); onRefresh() }
-  }
+  }, [onRefresh, supabase])
 
   return (
     <div className="flex flex-col h-full min-h-0">

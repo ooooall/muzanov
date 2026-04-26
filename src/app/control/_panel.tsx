@@ -16,19 +16,21 @@ interface Props {
   zones: ZoneWithState[]
   workers: Profile[]
   userId: string
+  isOwnerAccount: boolean
 }
 
 type Tab = 'zones' | 'workers' | 'operations' | 'danger'
 type WorkerStatus = 'pending' | 'active' | 'rejected'
 type ManagedWorker = Profile & { status?: WorkerStatus }
 
-export default function ControlPanel({ zones, workers, userId }: Props) {
+export default function ControlPanel({ zones, workers, userId, isOwnerAccount }: Props) {
   const [tab, setTab] = useState<Tab>('zones')
   const [userFilter, setUserFilter] = useState<WorkerStatus>('pending')
   const router = useRouter()
   const supabase = createClient()
   const workersWithStatus = workers as ManagedWorker[]
   const getWorkerStatus = (worker: ManagedWorker): WorkerStatus => worker.status ?? 'active'
+  const userManagementLocked = !isOwnerAccount
 
   async function setZoneStatus(zoneId: string, status: ZoneStatus) {
     const update: TablesUpdate<'zone_states'> = { status, updated_at: new Date().toISOString() }
@@ -77,17 +79,38 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
   }
 
   async function changeWorkerRole(workerId: string, role: 'worker' | 'taskmaster' | 'viewer') {
-    const { error } = await supabase.from('profiles').update({ role }).eq('id', workerId)
-    if (!error) { toast.success(`Роль: ${role}`); router.refresh() }
+    if (userManagementLocked) {
+      toast.error('Изменение ролей доступно только владельцу')
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${workerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      })
+      if (!response.ok) throw new Error('failed')
+      toast.success(`Роль: ${role}`)
+      router.refresh()
+    } catch {
+      toast.error('Ошибка изменения роли')
+    }
   }
 
   async function changeWorkerStatus(workerId: string, status: WorkerStatus) {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ status, updated_at: new Date().toISOString() } as unknown as TablesUpdate<'profiles'>)
-      .eq('id', workerId)
+    if (userManagementLocked) {
+      toast.error('Модерация пользователей доступна только владельцу')
+      return
+    }
 
-    if (!error) {
+    try {
+      const response = await fetch(`/api/admin/users/${workerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (!response.ok) throw new Error('failed')
       const labels: Record<WorkerStatus, string> = {
         pending: 'Ожидает',
         active: 'Активирован',
@@ -95,6 +118,8 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
       }
       toast.success(labels[status])
       router.refresh()
+    } catch {
+      toast.error('Ошибка изменения статуса')
     }
   }
 
@@ -204,6 +229,12 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
 
       {tab === 'workers' && (
         <div className="space-y-2">
+          {userManagementLocked && (
+            <div className="rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
+              Управление ролями и модерацией доступно только аккаунту владельца.
+            </div>
+          )}
+
           <div className="flex gap-1 p-1 rounded-lg bg-elevated border border-border">
             {([
               ['pending', 'Ожидают'],
@@ -260,6 +291,7 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
                     {getWorkerStatus(w) !== 'active' && (
                       <button
                         onClick={() => changeWorkerStatus(w.id, 'active')}
+                        disabled={userManagementLocked}
                         className="px-2.5 py-1 rounded border border-success/30 bg-success-soft text-success font-mono text-[9px] tracking-wide uppercase"
                       >
                         Approve
@@ -268,6 +300,7 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
                     {getWorkerStatus(w) !== 'rejected' && (
                       <button
                         onClick={() => changeWorkerStatus(w.id, 'rejected')}
+                        disabled={userManagementLocked}
                         className="px-2.5 py-1 rounded border border-danger/30 bg-danger-soft text-danger font-mono text-[9px] tracking-wide uppercase"
                       >
                         Reject
@@ -278,8 +311,9 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
                   <div className="flex gap-1">
                   {(['viewer', 'worker', 'taskmaster'] as const).map(r => (
                     <button key={r} onClick={() => changeWorkerRole(w.id, r)}
+                      disabled={userManagementLocked}
                       className={cn(
-                        'px-2.5 py-1 rounded border font-mono text-[9px] tracking-wide uppercase transition-colors',
+                        'px-2.5 py-1 rounded border font-mono text-[9px] tracking-wide uppercase transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
                         w.role === r
                           ? 'border-accent/40 bg-accent-soft text-accent'
                           : 'border-border-soft text-text-5 hover:border-border'

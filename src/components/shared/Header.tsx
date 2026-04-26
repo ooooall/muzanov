@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -8,6 +9,7 @@ import { useRole } from '@/hooks/usePermissions'
 import { createClient } from '@/lib/supabase/client'
 import { LogOut, Settings } from 'lucide-react'
 import type { UserRole } from '@/types/roles'
+import { appStorage } from '@/lib/storage'
 
 interface HeaderProps {
   role?: UserRole | null
@@ -20,11 +22,33 @@ export function Header({ role: roleProp, showAuth = true }: HeaderProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const isProtectedPath = pathname.startsWith('/dashboard')
+    || pathname.startsWith('/control')
+    || pathname.startsWith('/analytics')
+    || pathname.startsWith('/settings')
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT' && isProtectedPath) {
+        appStorage.clearSessionScope()
+        router.replace('/auth/login')
+        router.refresh()
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [isProtectedPath, router, supabase.auth])
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
+    try {
+      await supabase.auth.signOut()
+    } finally {
+      appStorage.clearSessionScope()
+      router.replace('/auth/login')
+      router.refresh()
+    }
   }
 
   const roleMeta = role ? getRoleMeta(role) : null

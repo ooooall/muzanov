@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { ROOMS, MAP_VIEWBOX } from '@/lib/constants'
 import { RoomShape } from './RoomShape'
 import type { ZoneWithState } from '@/types'
@@ -17,14 +18,14 @@ function getFilteredStatus(filter: string, status: string): boolean {
 }
 
 export function FloorPlan({ zones, selectedId, filter, onSelectRoom }: FloorPlanProps) {
-  const stateMap = new Map(zones.map(z => [z.zone_id, z]))
+  const stateMap = useMemo(() => new Map(zones.map((z) => [z.zone_id, z])), [zones])
 
-  const stats = {
-    in_progress: zones.filter(z => z.status === 'in_progress').length,
-    attention:   zones.filter(z => z.status === 'attention').length,
-    completed:   zones.filter(z => z.status === 'completed').length,
-    idle:        zones.filter(z => z.status === 'idle').length,
-  }
+  const stats = useMemo(() => ({
+    in_progress: zones.filter((z) => z.status === 'in_progress').length,
+    attention: zones.filter((z) => z.status === 'attention').length,
+    completed: zones.filter((z) => z.status === 'completed').length,
+    idle: zones.filter((z) => z.status === 'idle').length,
+  }), [zones])
 
   return (
     <div className="relative w-full">

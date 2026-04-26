@@ -37,26 +37,30 @@ export default function WorkerDashboardWrapper({ zones: initial, activity, userI
     status: ZoneStatus,
     extra?: Partial<TablesUpdate<'zone_states'>>
   ) => {
-    const update: TablesUpdate<'zone_states'> = {
-      status,
-      updated_at: new Date().toISOString(),
-      ...extra,
-    }
-    if (status === 'in_progress') update.started_at = new Date().toISOString()
-
-    const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
-
-    if (!error) {
-      const log: TablesInsert<'activity_log'> = {
-        zone_id: zoneId,
-        user_id: userId,
-        action: 'status_change',
-        details: { new_status: status },
+    try {
+      const update: TablesUpdate<'zone_states'> = {
+        status,
+        updated_at: new Date().toISOString(),
+        ...extra,
       }
-      await supabase.from('activity_log').insert(log)
-    }
+      if (status === 'in_progress') update.started_at = new Date().toISOString()
 
-    return error
+      const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
+
+      if (!error) {
+        const log: TablesInsert<'activity_log'> = {
+          zone_id: zoneId,
+          user_id: userId,
+          action: 'status_change',
+          details: { new_status: status },
+        }
+        await supabase.from('activity_log').insert(log)
+      }
+
+      return error
+    } catch {
+      return { message: 'network_error' }
+    }
   }, [supabase, userId])
 
   return (

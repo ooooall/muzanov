@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff } from 'lucide-react'
+import { appStorage } from '@/lib/storage'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -21,27 +22,34 @@ export default function RegisterPage() {
     setLoading(true)
     setError(null)
 
-    const supabase = createClient()
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: name } },
-    })
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { display_name: name } },
+      })
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      appStorage.set('auth:last_email', email.trim().toLowerCase())
+
+      // If email confirmation is disabled, user is auto-confirmed
+      if (data.session) {
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        setDone(true)
+      }
+    } catch {
+      setError('Ошибка сети. Попробуйте еще раз.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    // If email confirmation is disabled, user is auto-confirmed
-    if (data.session) {
-      router.push('/dashboard')
-      router.refresh()
-    } else {
-      setDone(true)
-    }
-    setLoading(false)
   }
 
   if (done) {

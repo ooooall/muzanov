@@ -1,11 +1,11 @@
 'use client'
 
-import { Suspense } from 'react'
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff } from 'lucide-react'
+import { appStorage } from '@/lib/storage'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -16,22 +16,33 @@ function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
 
+  useEffect(() => {
+    setEmail(appStorage.get<string>('auth:last_email', ''))
+  }, [])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
 
-    const next = params.get('next') ?? '/dashboard'
-    router.push(next)
-    router.refresh()
+      appStorage.set('auth:last_email', email.trim().toLowerCase())
+      const next = params.get('next') ?? '/dashboard'
+      router.push(next)
+      router.refresh()
+    } catch {
+      setError('Ошибка сети. Попробуйте еще раз.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

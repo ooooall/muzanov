@@ -21,22 +21,22 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#0a0a0a',
+  themeColor: '#f8fafc',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className="dark">
+    <html lang="ru">
       <body className="bg-base text-text-1 font-sans antialiased">
         {children}
         <Toaster
-          theme="dark"
+          theme="light"
           position="top-center"
           toastOptions={{
             style: {
-              background: '#151515',
-              border: '1px solid rgba(255,255,255,0.11)',
-              color: '#f5f5f5',
+              background: '#ffffff',
+              border: '1px solid rgba(15,23,42,0.12)',
+              color: '#0f172a',
               fontFamily: 'ui-monospace, SF Mono, monospace',
               fontSize: '12px',
               letterSpacing: '0.03em',

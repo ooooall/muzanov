@@ -4,6 +4,7 @@ import { Header } from '@/components/shared/Header'
 import { BottomNav } from '@/components/shared/BottomNav'
 import ControlPanel from './_panel'
 import type { ZoneWithState, Profile } from '@/types'
+import { isOwnerEmail } from '@/lib/auth'
 
 export const revalidate = 0
 
@@ -25,7 +26,7 @@ export default async function ControlPage() {
       .from('zone_states')
       .select('*, zones(*), operation_types(*), profiles(*)')
       .order('zone_id'),
-    supabase.from('profiles').select('*').in('role', ['worker', 'taskmaster']),
+    supabase.from('profiles').select('*').order('created_at', { ascending: false }),
   ])
 
   return (
@@ -36,6 +37,7 @@ export default async function ControlPage() {
           zones={(zones ?? []) as ZoneWithState[]}
           workers={(workers ?? []) as Profile[]}
           userId={user.id}
+          isOwnerAccount={isOwnerEmail(user.email)}
         />
       </main>
       <BottomNav role="taskmaster" />
