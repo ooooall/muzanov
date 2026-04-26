@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Quarters',
+    startupImage: [],
   },
   formatDetection: { telephone: false },
 }
