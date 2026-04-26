@@ -46,11 +46,12 @@ export async function updateSession(request: NextRequest) {
 
   // Logged in → check profile status
   if (user && !pathname.startsWith('/pending') && !pathname.startsWith('/auth')) {
-    const { data: profile } = await supabase
+    const { data: rawProfile } = await supabase
       .from('profiles')
-      .select('role, status')
+      .select('*')
       .eq('id', user.id)
       .single()
+    const profile = rawProfile as { role?: string | null; status?: string | null } | null
 
     // Pending users → redirect to waiting page
     if (profile?.status === 'pending' && !pathname.startsWith('/pending')) {
