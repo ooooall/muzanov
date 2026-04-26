@@ -19,12 +19,16 @@ interface Props {
 }
 
 type Tab = 'zones' | 'workers' | 'operations' | 'danger'
+type WorkerStatus = 'pending' | 'active' | 'rejected'
+type ManagedWorker = Profile & { status?: WorkerStatus }
 
 export default function ControlPanel({ zones, workers, userId }: Props) {
   const [tab, setTab] = useState<Tab>('zones')
-  const [userFilter, setUserFilter] = useState<'pending' | 'active' | 'rejected'>('pending')
+  const [userFilter, setUserFilter] = useState<WorkerStatus>('pending')
   const router = useRouter()
   const supabase = createClient()
+  const workersWithStatus = workers as ManagedWorker[]
+  const getWorkerStatus = (worker: ManagedWorker): WorkerStatus => worker.status ?? 'active'
 
   async function setZoneStatus(zoneId: string, status: ZoneStatus) {
     const update: TablesUpdate<'zone_states'> = { status, updated_at: new Date().toISOString() }
@@ -77,14 +81,14 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
     if (!error) { toast.success(`Роль: ${role}`); router.refresh() }
   }
 
-  async function changeWorkerStatus(workerId: string, status: 'pending' | 'active' | 'rejected') {
+  async function changeWorkerStatus(workerId: string, status: WorkerStatus) {
     const { error } = await supabase
       .from('profiles')
-      .update({ status, updated_at: new Date().toISOString() })
+      .update({ status, updated_at: new Date().toISOString() } as unknown as TablesUpdate<'profiles'>)
       .eq('id', workerId)
 
     if (!error) {
-      const labels: Record<'pending' | 'active' | 'rejected', string> = {
+      const labels: Record<WorkerStatus, string> = {
         pending: 'Ожидает',
         active: 'Активирован',
         rejected: 'Отклонен',
@@ -214,7 +218,7 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
                   userFilter === id ? 'bg-active text-text-1' : 'text-text-4 hover:text-text-3'
                 )}
               >
-                {label} ({workers.filter(w => w.status === id).length})
+                {label} ({workersWithStatus.filter(w => getWorkerStatus(w) === id).length})
               </button>
             ))}
           </div>
@@ -224,31 +228,36 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
               Нет зарегистрированных пользователей
             </div>
           ) : (
-            workers
-              .filter(w => w.status === userFilter)
+            workersWithStatus
+              .filter(w => getWorkerStatus(w) === userFilter)
               .map(w => (
               <div key={w.id} className="flex items-center gap-4 p-4 rounded-lg bg-elevated border border-border">
                 <div className="flex-1 min-w-0">
+                  {(() => {
+                    const status = getWorkerStatus(w)
+                    return (
                   <div className="flex items-center gap-2">
                     <div className="text-[14px] font-medium text-text-1">{w.display_name ?? 'Без имени'}</div>
                     <span
                       className={cn(
                         'px-2 py-0.5 rounded border font-mono text-[9px] uppercase tracking-wide',
-                        w.status === 'active' && 'border-success/30 bg-success-soft text-success',
-                        w.status === 'pending' && 'border-accent/30 bg-accent-soft text-accent',
-                        w.status === 'rejected' && 'border-danger/30 bg-danger-soft text-danger'
+                        status === 'active' && 'border-success/30 bg-success-soft text-success',
+                        status === 'pending' && 'border-accent/30 bg-accent-soft text-accent',
+                        status === 'rejected' && 'border-danger/30 bg-danger-soft text-danger'
                       )}
                     >
-                      {w.status}
+                      {status}
                     </span>
                   </div>
+                    )
+                  })()}
                   <div className="text-[11px] text-text-4 font-mono mt-0.5">{w.id.slice(0, 8)}…</div>
                   <div className="text-[11px] text-text-4 mt-0.5">{formatRelative(w.created_at)}</div>
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <div className="flex gap-1">
-                    {w.status !== 'active' && (
+                    {getWorkerStatus(w) !== 'active' && (
                       <button
                         onClick={() => changeWorkerStatus(w.id, 'active')}
                         className="px-2.5 py-1 rounded border border-success/30 bg-success-soft text-success font-mono text-[9px] tracking-wide uppercase"
@@ -256,7 +265,7 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
                         Approve
                       </button>
                     )}
-                    {w.status !== 'rejected' && (
+                    {getWorkerStatus(w) !== 'rejected' && (
                       <button
                         onClick={() => changeWorkerStatus(w.id, 'rejected')}
                         className="px-2.5 py-1 rounded border border-danger/30 bg-danger-soft text-danger font-mono text-[9px] tracking-wide uppercase"
