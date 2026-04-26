@@ -37,8 +37,35 @@ export function ZoneDetailDrawer({
   const [savingNote, setSavingNote] = useState(false)
   const [elapsed, setElapsed] = useState(0)
 
-  const zone  = zones.find(z => z.zone_id === zoneId) ?? null
   const room  = zoneId ? ROOMS.find(r => r.id === zoneId) ?? null : null
+  const zone = zoneId
+    ? (
+      zones.find(z => z.zone_id === zoneId) ??
+      (room
+        ? {
+            zone_id: room.id,
+            status: 'idle',
+            operation_type_id: null,
+            assigned_worker_id: null,
+            notes: null,
+            started_at: null,
+            updated_at: new Date().toISOString(),
+            zones: {
+              id: room.id,
+              name: room.name,
+              short_name: room.short,
+              code: room.code,
+              area: room.area,
+              geometry: room.shape,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            operation_types: null,
+            profiles: null,
+          }
+        : null)
+    )
+    : null
   const isOpen = zoneId !== null
 
   // Sync note text when zone changes
@@ -109,7 +136,7 @@ export function ZoneDetailDrawer({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-            className="fixed left-0 right-0 bottom-0 z-60 flex flex-col bg-panel border-t border-border-strong rounded-t-xl shadow-drawer overflow-hidden"
+            className="zone-drawer fixed left-0 right-0 bottom-0 z-60 flex flex-col bg-panel border-t border-border-strong rounded-t-xl shadow-drawer overflow-hidden"
             style={{ maxHeight: '92dvh', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
             {/* Desktop variant: side panel */}
@@ -120,7 +147,7 @@ export function ZoneDetailDrawer({
                   left: auto !important; width: 420px !important;
                   max-height: none !important;
                   border-radius: 8px !important;
-                  border: 1px solid rgba(255,255,255,0.11) !important;
+                  border: 1px solid rgba(15,23,42,0.18) !important;
                 }
               }
             `}</style>

@@ -43,7 +43,7 @@ export function FloorPlan({ zones, selectedId, filter, onSelectRoom }: FloorPlan
               <path
                 d="M 20 0 L 0 0 0 20"
                 fill="none"
-                stroke="rgba(255,255,255,0.012)"
+                stroke="rgba(15,23,42,0.06)"
                 strokeWidth="0.5"
               />
             </pattern>
@@ -69,10 +69,10 @@ export function FloorPlan({ zones, selectedId, filter, onSelectRoom }: FloorPlan
 
           {/* Compass */}
           <g transform="translate(558, 752)" opacity="0.25">
-            <circle cx="0" cy="0" r="14" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.5" />
-            <text x="0" y="-18" textAnchor="middle" fontSize="6" fontFamily="monospace" fill="#5a5a5a" letterSpacing="0.1em">N</text>
-            <line x1="0" y1="-10" x2="0" y2="10" stroke="#5a5a5a" strokeWidth="0.5" />
-            <line x1="-10" y1="0" x2="10" y2="0" stroke="#5a5a5a" strokeWidth="0.5" />
+            <circle cx="0" cy="0" r="14" fill="none" stroke="rgba(15,23,42,0.22)" strokeWidth="0.5" />
+            <text x="0" y="-18" textAnchor="middle" fontSize="6" fontFamily="monospace" fill="#64748b" letterSpacing="0.1em">N</text>
+            <line x1="0" y1="-10" x2="0" y2="10" stroke="#64748b" strokeWidth="0.5" />
+            <line x1="-10" y1="0" x2="10" y2="0" stroke="#64748b" strokeWidth="0.5" />
           </g>
         </svg>
 

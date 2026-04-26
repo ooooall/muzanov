@@ -14,25 +14,25 @@ interface RoomShapeProps {
 }
 
 const ROOM_BASE_FILLS: Record<string, string> = {
-  bedroom_small:  '#181820',
-  bedroom_medium: '#181820',
-  living:         '#181820',
-  kitchen:        '#1c1814',
-  corridor:       '#151518',
-  wardrobe:       '#161616',
-  entry:          '#161616',
-  bath:           '#141618',
-  wc:             '#141618',
+  bedroom_small:  '#f8fafc',
+  bedroom_medium: '#f8fafc',
+  living:         '#f8fafc',
+  kitchen:        '#fffef7',
+  corridor:       '#f1f5f9',
+  wardrobe:       '#f8fafc',
+  entry:          '#f8fafc',
+  bath:           '#f0fdfa',
+  wc:             '#f0fdfa',
 }
 
 function getStatusFill(status: ZoneStatus): string {
   const map: Partial<Record<ZoneStatus, string>> = {
-    in_progress: 'rgba(245,197,24,0.08)',
-    attention:   'rgba(200,162,0,0.10)',
-    completed:   'rgba(58,174,95,0.08)',
-    rework:      'rgba(160,136,0,0.10)',
-    scheduled:   'rgba(128,128,128,0.06)',
-    paused:      'rgba(200,162,0,0.06)',
+    in_progress: 'rgba(245,197,24,0.20)',
+    attention:   'rgba(200,162,0,0.18)',
+    completed:   'rgba(58,174,95,0.16)',
+    rework:      'rgba(160,136,0,0.18)',
+    scheduled:   'rgba(100,116,139,0.14)',
+    paused:      'rgba(200,162,0,0.14)',
   }
   return map[status] ?? 'transparent'
 }
@@ -57,10 +57,10 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
 
   function renderShape(extraProps: { fill?: string; stroke?: string; strokeWidth?: number; opacity?: number }) {
     if (isRect && rectProps) {
-      return <rect {...rectProps} {...extraProps} />
+      return <rect {...rectProps} rx={7} ry={7} {...extraProps} />
     }
     if (polyProps) {
-      return <polygon {...polyProps} {...extraProps} />
+      return <polygon {...polyProps} strokeLinejoin="round" {...extraProps} />
     }
     return null
   }
@@ -78,8 +78,8 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
       <motion.g animate={{ opacity: isSelected ? 1 : 0.9 }} transition={{ duration: 0.15 }}>
         {renderShape({
           fill: 'none',
-          stroke: isSelected ? statusColor : 'rgba(255,255,255,0.08)',
-          strokeWidth: isSelected ? 1.5 : 0.5,
+          stroke: isSelected ? statusColor : 'rgba(15,23,42,0.16)',
+          strokeWidth: isSelected ? 2 : 1,
           opacity,
         })}
       </motion.g>
@@ -101,7 +101,7 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
         </text>
         <text x={room.labelAt.x} y={room.labelAt.y + 6} textAnchor="middle"
           fontSize={9.5} fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontWeight={500}
-          fill="#c0c0c0" style={{ userSelect: 'none' }}>
+          fill="#0f172a" style={{ userSelect: 'none' }}>
           {room.short}
         </text>
         <text x={room.labelAt.x} y={room.labelAt.y + 19} textAnchor="middle"
