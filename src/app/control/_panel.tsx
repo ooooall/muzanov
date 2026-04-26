@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ROOMS, OPERATIONS, STATUSES } from '@/lib/constants'
@@ -31,6 +31,18 @@ export default function ControlPanel({ zones, workers, userId, isOwnerAccount }:
   const workersWithStatus = workers as ManagedWorker[]
   const getWorkerStatus = (worker: ManagedWorker): WorkerStatus => worker.status ?? 'active'
   const userManagementLocked = !isOwnerAccount
+  const filteredWorkers = useMemo(
+    () => workersWithStatus.filter((w) => getWorkerStatus(w) === userFilter),
+    [workersWithStatus, userFilter]
+  )
+  const userCounts = useMemo(
+    () => ({
+      pending: workersWithStatus.filter((w) => getWorkerStatus(w) === 'pending').length,
+      active: workersWithStatus.filter((w) => getWorkerStatus(w) === 'active').length,
+      rejected: workersWithStatus.filter((w) => getWorkerStatus(w) === 'rejected').length,
+    }),
+    [workersWithStatus]
+  )
 
   async function setZoneStatus(zoneId: string, status: ZoneStatus) {
     const update: TablesUpdate<'zone_states'> = { status, updated_at: new Date().toISOString() }
@@ -249,7 +261,7 @@ export default function ControlPanel({ zones, workers, userId, isOwnerAccount }:
                   userFilter === id ? 'bg-active text-text-1' : 'text-text-4 hover:text-text-3'
                 )}
               >
-                {label} ({workersWithStatus.filter(w => getWorkerStatus(w) === id).length})
+                {label} ({userCounts[id]})
               </button>
             ))}
           </div>
@@ -259,14 +271,11 @@ export default function ControlPanel({ zones, workers, userId, isOwnerAccount }:
               Нет зарегистрированных пользователей
             </div>
           ) : (
-            workersWithStatus
-              .filter(w => getWorkerStatus(w) === userFilter)
-              .map(w => (
+            filteredWorkers.map(w => {
+              const status = getWorkerStatus(w)
+              return (
               <div key={w.id} className="flex items-center gap-4 p-4 rounded-lg bg-elevated border border-border">
                 <div className="flex-1 min-w-0">
-                  {(() => {
-                    const status = getWorkerStatus(w)
-                    return (
                   <div className="flex items-center gap-2">
                     <div className="text-[14px] font-medium text-text-1">{w.display_name ?? 'Без имени'}</div>
                     <span
@@ -280,15 +289,13 @@ export default function ControlPanel({ zones, workers, userId, isOwnerAccount }:
                       {status}
                     </span>
                   </div>
-                    )
-                  })()}
                   <div className="text-[11px] text-text-4 font-mono mt-0.5">{w.id.slice(0, 8)}…</div>
                   <div className="text-[11px] text-text-4 mt-0.5">{formatRelative(w.created_at)}</div>
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <div className="flex gap-1">
-                    {getWorkerStatus(w) !== 'active' && (
+                    {status !== 'active' && (
                       <button
                         onClick={() => changeWorkerStatus(w.id, 'active')}
                         disabled={userManagementLocked}
@@ -297,7 +304,7 @@ export default function ControlPanel({ zones, workers, userId, isOwnerAccount }:
                         Approve
                       </button>
                     )}
-                    {getWorkerStatus(w) !== 'rejected' && (
+                    {status !== 'rejected' && (
                       <button
                         onClick={() => changeWorkerStatus(w.id, 'rejected')}
                         disabled={userManagementLocked}
@@ -325,7 +332,8 @@ export default function ControlPanel({ zones, workers, userId, isOwnerAccount }:
                   </div>
                 </div>
               </div>
-            ))
+              )
+            })
           )}
         </div>
       )}
