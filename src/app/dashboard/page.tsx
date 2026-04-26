@@ -2,9 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/shared/Header'
 import { BottomNav } from '@/components/shared/BottomNav'
-import { WorkerDashboard } from '@/components/role-specific/WorkerDashboard'
-import { TaskMasterDashboard } from '@/components/role-specific/TaskMasterDashboard'
-import type { ZoneWithState, ActivityWithZone, Profile } from '@/types'
+import type { ZoneWithState, ActivityWithZone, Profile, OperationType } from '@/types'
 import type { UserRole } from '@/types/roles'
 
 export const revalidate = 0
@@ -22,7 +20,7 @@ export default async function DashboardPage() {
 
   const role = (profile?.role ?? 'viewer') as UserRole
 
-  const [{ data: zones }, { data: activity }, { data: workers }] = await Promise.all([
+  const [{ data: zones }, { data: activity }, { data: workers }, { data: operations }] = await Promise.all([
     supabase
       .from('zone_states')
       .select('*, zones(*), operation_types(*), profiles(*)')
@@ -34,6 +32,9 @@ export default async function DashboardPage() {
       .limit(50),
     role === 'taskmaster'
       ? supabase.from('profiles').select('*').eq('role', 'worker')
+      : Promise.resolve({ data: [] }),
+    role === 'taskmaster'
+      ? supabase.from('operation_types').select('*').order('is_system', { ascending: false }).order('created_at', { ascending: true })
       : Promise.resolve({ data: [] }),
   ])
 
@@ -55,6 +56,7 @@ export default async function DashboardPage() {
             zones={(zones ?? []) as ZoneWithState[]}
             activity={(activity ?? []) as ActivityWithZone[]}
             workers={(workers ?? []) as Profile[]}
+            operations={(operations ?? []) as OperationType[]}
             userId={user.id}
           />
         )}

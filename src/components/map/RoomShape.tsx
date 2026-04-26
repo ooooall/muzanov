@@ -14,99 +14,105 @@ interface RoomShapeProps {
 }
 
 const ROOM_BASE_FILLS: Record<string, string> = {
-  bedroom_small:  '#f8fafc',
+  bedroom_small: '#f8fafc',
   bedroom_medium: '#f8fafc',
-  living:         '#f8fafc',
-  kitchen:        '#fffef7',
-  corridor:       '#f1f5f9',
-  wardrobe:       '#f8fafc',
-  entry:          '#f8fafc',
-  bath:           '#f0fdfa',
-  wc:             '#f0fdfa',
+  living: '#f8fafc',
+  kitchen: '#fffef7',
+  corridor: '#f1f5f9',
+  wardrobe: '#f8fafc',
+  entry: '#f8fafc',
+  bath: '#f0fdfa',
+  wc: '#f0fdfa',
 }
 
 function getStatusFill(status: ZoneStatus): string {
-  const map: Partial<Record<ZoneStatus, string>> = {
-    in_progress: 'rgba(245,197,24,0.20)',
-    attention:   'rgba(200,162,0,0.18)',
-    completed:   'rgba(58,174,95,0.16)',
-    rework:      'rgba(160,136,0,0.18)',
-    scheduled:   'rgba(100,116,139,0.14)',
-    paused:      'rgba(200,162,0,0.14)',
+  const fills: Record<ZoneStatus, string> = {
+    new: 'rgba(148,163,184,0.08)',
+    in_progress: 'rgba(217,119,6,0.18)',
+    review: 'rgba(37,99,235,0.16)',
+    done: 'rgba(5,150,105,0.14)',
   }
-  return map[status] ?? 'transparent'
+
+  return fills[status]
 }
 
-type RectProps = { x: number; y: number; width: number; height: number }
-type PolyProps = { points: string }
-
 export function RoomShape({ room, state, isSelected, isFiltered, onClick }: RoomShapeProps) {
-  const status = state?.status ?? 'idle'
-  const statusColor = STATUSES[status]?.color ?? '#5a5a5a'
-  const baseFill = ROOM_BASE_FILLS[room.id] ?? '#161616'
-  const statusFill = getStatusFill(status)
-  const opacity = isFiltered ? 0.25 : 1
+  const status = state?.status ?? 'new'
+  const statusColor = STATUSES[status].color
+  const baseFill = ROOM_BASE_FILLS[room.id] ?? '#f8fafc'
+  const opacity = isFiltered ? 0.24 : 1
 
-  const rectProps: RectProps | null = room.shape.type === 'rect'
-    ? { x: room.shape.x, y: room.shape.y, width: room.shape.w, height: room.shape.h }
-    : null
-  const polyProps: PolyProps | null = room.shape.type === 'polygon'
-    ? { points: room.shape.points }
-    : null
-  const isRect = rectProps !== null
+  const shape =
+    room.shape.type === 'rect'
+      ? {
+          kind: 'rect' as const,
+          props: { x: room.shape.x, y: room.shape.y, width: room.shape.w, height: room.shape.h, rx: 8, ry: 8 },
+        }
+      : {
+          kind: 'polygon' as const,
+          props: { points: room.shape.points },
+        }
 
-  function renderShape(extraProps: { fill?: string; stroke?: string; strokeWidth?: number; opacity?: number }) {
-    if (isRect && rectProps) {
-      return <rect {...rectProps} rx={7} ry={7} {...extraProps} />
-    }
-    if (polyProps) {
-      return <polygon {...polyProps} strokeLinejoin="round" {...extraProps} />
-    }
-    return null
+  function renderShape(extraProps: Record<string, string | number>) {
+    if (shape.kind === 'rect') return <rect {...shape.props} {...extraProps} />
+    return <polygon {...shape.props} strokeLinejoin="round" {...extraProps} />
   }
 
   return (
-    <g
-      className="cursor-pointer"
-      onClick={onClick}
-      role="button"
-      aria-label={`${room.name} — ${STATUSES[status].label}`}
-    >
+    <g className="cursor-pointer" onClick={onClick} role="button" aria-label={`${room.name} — ${STATUSES[status].label}`}>
       {renderShape({ fill: baseFill, opacity })}
-      {renderShape({ fill: statusFill, opacity })}
+      {renderShape({ fill: getStatusFill(status), opacity })}
 
-      <motion.g animate={{ opacity: isSelected ? 1 : 0.9 }} transition={{ duration: 0.15 }}>
+      <motion.g animate={{ opacity: isSelected ? 1 : 0.94 }} transition={{ duration: 0.15 }}>
         {renderShape({
           fill: 'none',
-          stroke: isSelected ? statusColor : 'rgba(15,23,42,0.16)',
+          stroke: isSelected ? statusColor : 'rgba(15,23,42,0.14)',
           strokeWidth: isSelected ? 2 : 1,
           opacity,
         })}
       </motion.g>
 
-      {(status === 'in_progress' || status === 'attention') && !isFiltered && (
-        <motion.g
-          animate={{ opacity: [0.4, 0.1, 0.4] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          {renderShape({ fill: 'none', stroke: statusColor, strokeWidth: 2.5 })}
+      {(status === 'in_progress' || status === 'review') && !isFiltered && (
+        <motion.g animate={{ opacity: [0.2, 0.55, 0.2] }} transition={{ duration: 2.2, repeat: Infinity }}>
+          {renderShape({ fill: 'none', stroke: statusColor, strokeWidth: 2.6 })}
         </motion.g>
       )}
 
-      <g opacity={isFiltered ? 0.3 : 1}>
-        <text x={room.labelAt.x} y={room.labelAt.y - 8} textAnchor="middle"
-          fontSize={8} fontFamily="ui-monospace,SF Mono,monospace" letterSpacing="0.10em"
-          fill={statusColor} style={{ textTransform: 'uppercase', userSelect: 'none' }}>
+      <g opacity={isFiltered ? 0.35 : 1}>
+        <text
+          x={room.labelAt.x}
+          y={room.labelAt.y - 8}
+          textAnchor="middle"
+          fontSize={8}
+          fontFamily="ui-monospace,SF Mono,monospace"
+          letterSpacing="0.08em"
+          fill={statusColor}
+          style={{ textTransform: 'uppercase', userSelect: 'none' }}
+        >
           {room.code}
         </text>
-        <text x={room.labelAt.x} y={room.labelAt.y + 6} textAnchor="middle"
-          fontSize={9.5} fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontWeight={500}
-          fill="#0f172a" style={{ userSelect: 'none' }}>
+        <text
+          x={room.labelAt.x}
+          y={room.labelAt.y + 6}
+          textAnchor="middle"
+          fontSize={9.5}
+          fontFamily="-apple-system,BlinkMacSystemFont,sans-serif"
+          fontWeight={600}
+          fill="#0f172a"
+          style={{ userSelect: 'none' }}
+        >
           {room.short}
         </text>
-        <text x={room.labelAt.x} y={room.labelAt.y + 19} textAnchor="middle"
-          fontSize={7.5} fontFamily="ui-monospace,SF Mono,monospace" letterSpacing="0.08em"
-          fill={statusColor} style={{ textTransform: 'uppercase', userSelect: 'none' }}>
+        <text
+          x={room.labelAt.x}
+          y={room.labelAt.y + 19}
+          textAnchor="middle"
+          fontSize={7.5}
+          fontFamily="ui-monospace,SF Mono,monospace"
+          letterSpacing="0.08em"
+          fill={statusColor}
+          style={{ textTransform: 'uppercase', userSelect: 'none' }}
+        >
           {STATUSES[status].sub}
         </text>
       </g>

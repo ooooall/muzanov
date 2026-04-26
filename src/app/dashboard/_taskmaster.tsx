@@ -5,21 +5,23 @@ import { useRouter } from 'next/navigation'
 import { TaskMasterDashboard } from '@/components/role-specific/TaskMasterDashboard'
 import { useRealtimeZones } from '@/hooks/useRealtime'
 import { createClient } from '@/lib/supabase/client'
-import type { ZoneWithState, ActivityWithZone, Profile } from '@/types'
+import type { ZoneWithState, ActivityWithZone, Profile, OperationType } from '@/types'
 import type { TablesUpdate, TablesInsert } from '@/types/database.types'
 import type { ZoneStatus } from '@/types/roles'
+import { buildZoneUpdate } from '@/lib/zone-workflow'
 
 interface Props {
   zones: ZoneWithState[]
   activity: ActivityWithZone[]
   workers: Profile[]
+  operations: OperationType[]
   userId: string
 }
 
-export default function TaskMasterDashboardWrapper({ zones: initial, activity, workers, userId }: Props) {
+export default function TaskMasterDashboardWrapper({ zones: initial, activity, workers, operations, userId }: Props) {
   const [zones, setZones] = useState(initial)
   const router = useRouter()
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   useRealtimeZones(useCallback((payload) => {
     if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
@@ -41,18 +43,7 @@ export default function TaskMasterDashboardWrapper({ zones: initial, activity, w
     extra?: Partial<TablesUpdate<'zone_states'>>
   ) => {
     try {
-      const update: TablesUpdate<'zone_states'> = {
-        status,
-        updated_at: new Date().toISOString(),
-        ...extra,
-      }
-      if (status === 'in_progress') update.started_at = new Date().toISOString()
-      if (status === 'idle') {
-        update.started_at = null
-        update.operation_type_id = null
-        update.assigned_worker_id = null
-        update.notes = null
-      }
+      const update = buildZoneUpdate(status, extra)
 
       const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
 
@@ -77,6 +68,7 @@ export default function TaskMasterDashboardWrapper({ zones: initial, activity, w
       zones={zones}
       activity={activity}
       workers={workers}
+      operations={operations}
       userId={userId}
       onZoneUpdate={handleZoneUpdate}
       onRefresh={() => router.refresh()}

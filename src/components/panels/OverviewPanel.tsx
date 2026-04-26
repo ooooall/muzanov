@@ -1,8 +1,9 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import { STATUSES, ROOMS } from '@/lib/constants'
 import { StatusDot } from '@/components/shared/StatusBadge'
+import { AppSurface } from '@/components/shared/AppSurface'
+import { cn } from '@/lib/utils'
 import type { ZoneWithState } from '@/types'
 import type { ZoneStatus } from '@/types/roles'
 
@@ -14,72 +15,61 @@ interface OverviewPanelProps {
 export function OverviewPanel({ zones, className }: OverviewPanelProps) {
   const total = ROOMS.length
 
-  const statusCounts = zones.reduce((acc, z) => {
-    acc[z.status] = (acc[z.status] ?? 0) + 1
+  const statusCounts = zones.reduce((acc, zone) => {
+    acc[zone.status] = (acc[zone.status] ?? 0) + 1
     return acc
   }, {} as Record<ZoneStatus, number>)
 
-  const completedCount = statusCounts.completed ?? 0
-  const activeCount    = statusCounts.in_progress ?? 0
-  const attnCount      = statusCounts.attention ?? 0
-  const progress       = total > 0 ? Math.round((completedCount / total) * 100) : 0
+  const completedCount = statusCounts.done ?? 0
+  const activeCount = statusCounts.in_progress ?? 0
+  const reviewCount = statusCounts.review ?? 0
+  const progress = total > 0 ? Math.round((completedCount / total) * 100) : 0
 
-  const statRows: Array<{ status: ZoneStatus; count: number }> = (
-    Object.entries(statusCounts) as Array<[ZoneStatus, number]>
-  )
-    .filter(([, c]) => c > 0)
-    .sort(([a], [b]) => {
-      const order: ZoneStatus[] = ['in_progress', 'attention', 'scheduled', 'paused', 'rework', 'completed', 'idle']
-      return order.indexOf(a) - order.indexOf(b)
-    })
-    .map(([status, count]) => ({ status, count }))
+  const orderedStatuses: ZoneStatus[] = ['in_progress', 'review', 'done', 'new']
+  const rows = orderedStatuses
+    .map((status) => ({ status, count: statusCounts[status] ?? 0 }))
+    .filter((row) => row.count > 0)
 
   return (
-    <div className={cn('flex flex-col gap-4', className)}>
-      {/* Progress bar */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-[10px] tracking-wide text-text-4 uppercase">Прогресс</span>
-          <span className="font-mono text-[11px] text-text-2">{progress}%</span>
+    <div className={cn('flex flex-col gap-6', className)}>
+      <AppSurface className="p-5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-mono text-[10px] uppercase tracking-wide text-text-4">Прогресс по объекту</span>
+          <span className="font-mono text-[11px] uppercase tracking-wide text-text-2">{progress}%</span>
         </div>
-        <div className="h-1.5 rounded-pill bg-elevated overflow-hidden">
-          <div
-            className="h-full rounded-pill bg-success transition-all duration-700"
-            style={{ width: `${progress}%` }}
-          />
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${progress}%` }} />
         </div>
+      </AppSurface>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="В работе" value={activeCount} color="#d97706" />
+        <StatCard label="На проверке" value={reviewCount} color="#2563eb" />
+        <StatCard label="Готово" value={completedCount} color="#059669" />
       </div>
 
-      {/* Quick stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <StatCard label="В работе"  value={activeCount}    color="#f5c518" />
-        <StatCard label="Готово"     value={completedCount} color="#3aae5f" />
-        <StatCard label="Внимание"  value={attnCount}      color="#c8a200" />
-      </div>
-
-      {/* Status breakdown */}
-      {statRows.length > 0 && (
-        <div className="flex flex-col border border-border rounded-lg overflow-hidden bg-elevated">
-          {statRows.map(({ status, count }) => (
-            <div key={status} className="flex items-center gap-3 px-4 py-2.5 border-b border-border-soft last:border-0">
-              <StatusDot status={status} size={7} />
-              <span className="flex-1 text-[12px] text-text-2">{STATUSES[status].label}</span>
-              <span className="font-mono text-[11px] text-text-3">{count}/{total}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <AppSurface className="overflow-hidden">
+        {rows.map(({ status, count }) => (
+          <div key={status} className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0">
+            <StatusDot status={status} size={8} />
+            <span className="flex-1 text-[13px] text-text-2">{STATUSES[status].label}</span>
+            <span className="font-mono text-[11px] uppercase tracking-wide text-text-4">
+              {count}/{total}
+            </span>
+          </div>
+        ))}
+      </AppSurface>
     </div>
   )
 }
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="flex flex-col gap-1 p-3 rounded-lg bg-elevated border border-border-soft">
-      <span className="font-mono text-[22px] font-medium leading-none" style={{ color }}>
+    <AppSurface className="p-4">
+      <div className="text-[26px] font-semibold leading-none" style={{ color }}>
         {value}
-      </span>
-      <span className="font-mono text-[9px] tracking-wide text-text-4 uppercase leading-none">{label}</span>
-    </div>
+      </div>
+      <div className="mt-2 font-mono text-[10px] uppercase tracking-wide text-text-4">{label}</div>
+    </AppSurface>
   )
 }

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { ZoneWithState, ActivityWithZone } from '@/types'
 import type { TablesUpdate, TablesInsert } from '@/types/database.types'
 import type { ZoneStatus } from '@/types/roles'
+import { buildZoneUpdate } from '@/lib/zone-workflow'
 
 interface Props {
   zones: ZoneWithState[]
@@ -16,7 +17,7 @@ interface Props {
 
 export default function WorkerDashboardWrapper({ zones: initial, activity, userId }: Props) {
   const [zones, setZones] = useState(initial)
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   useRealtimeZones(useCallback((payload) => {
     if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
@@ -38,12 +39,7 @@ export default function WorkerDashboardWrapper({ zones: initial, activity, userI
     extra?: Partial<TablesUpdate<'zone_states'>>
   ) => {
     try {
-      const update: TablesUpdate<'zone_states'> = {
-        status,
-        updated_at: new Date().toISOString(),
-        ...extra,
-      }
-      if (status === 'in_progress') update.started_at = new Date().toISOString()
+      const update = buildZoneUpdate(status, extra)
 
       const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
 
@@ -66,7 +62,6 @@ export default function WorkerDashboardWrapper({ zones: initial, activity, userI
   return (
     <WorkerDashboard
       zones={zones}
-      activity={activity}
       userId={userId}
       onZoneUpdate={handleZoneUpdate}
     />

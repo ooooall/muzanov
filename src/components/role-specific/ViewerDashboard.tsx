@@ -7,6 +7,7 @@ import { OverviewPanel } from '@/components/panels/OverviewPanel'
 import { FeedPanel } from '@/components/panels/FeedPanel'
 import { ZoneDetailDrawer } from '@/components/panels/ZoneDetailDrawer'
 import { cn } from '@/lib/utils'
+import { getZoneStats } from '@/lib/zone-workflow'
 import type { ZoneWithState, ActivityWithZone } from '@/types'
 
 interface ViewerDashboardProps {
@@ -21,12 +22,7 @@ export function ViewerDashboard({ zones, activity }: ViewerDashboardProps) {
   const [filter, setFilter] = useState('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const stats = {
-    in_progress: zones.filter(z => z.status === 'in_progress').length,
-    attention:   zones.filter(z => z.status === 'attention').length,
-    completed:   zones.filter(z => z.status === 'completed').length,
-    idle:        zones.filter(z => z.status === 'idle').length,
-  }
+  const stats = getZoneStats(zones.map((zone) => zone.status))
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -86,6 +82,7 @@ export function ViewerDashboard({ zones, activity }: ViewerDashboardProps) {
         zoneId={selectedId}
         zones={zones}
         role={null}
+        operations={[]}
         onClose={() => setSelectedId(null)}
         onStatusChange={async () => {}}
       />

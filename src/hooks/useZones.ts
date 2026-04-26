@@ -6,12 +6,13 @@ import { useRealtimeZones, useRealtimeActivity } from './useRealtime'
 import type { ZoneWithState, ActivityWithZone } from '@/types'
 import type { TablesUpdate } from '@/types/database.types'
 import type { ZoneStatus } from '@/types/roles'
+import { buildZoneUpdate } from '@/lib/zone-workflow'
 
 export function useZones() {
   const [zones, setZones] = useState<ZoneWithState[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   const fetchZones = useCallback(async () => {
     const { data, error } = await supabase
@@ -49,14 +50,7 @@ export function useZones() {
     status: ZoneStatus,
     extra?: Partial<TablesUpdate<'zone_states'>>
   ) => {
-    const update: TablesUpdate<'zone_states'> = {
-      status,
-      updated_at: new Date().toISOString(),
-      ...extra,
-    }
-    if (status === 'in_progress' && !extra?.started_at) {
-      update.started_at = new Date().toISOString()
-    }
+    const update = buildZoneUpdate(status, extra)
 
     const { error } = await supabase
       .from('zone_states')
@@ -72,7 +66,7 @@ export function useZones() {
 export function useActivity(limit = 50) {
   const [activity, setActivity] = useState<ActivityWithZone[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     async function fetch() {

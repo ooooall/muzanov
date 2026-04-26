@@ -1,15 +1,22 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { LayoutGrid, ListChecks, RefreshCcw, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
 import { FloorPlan } from '@/components/map/FloorPlan'
 import { MapControls } from '@/components/map/MapControls'
 import { OverviewPanel } from '@/components/panels/OverviewPanel'
 import { FeedPanel } from '@/components/panels/FeedPanel'
 import { ZoneDetailDrawer } from '@/components/panels/ZoneDetailDrawer'
+import { AppButton } from '@/components/shared/AppButton'
+import { AppSurface } from '@/components/shared/AppSurface'
+import { StatusBadge } from '@/components/shared/StatusBadge'
+import { ROOMS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { toast } from 'sonner'
-import type { ZoneWithState, ActivityWithZone, Profile } from '@/types'
+import { getZoneStats } from '@/lib/zone-workflow'
+import type { ZoneWithState, ActivityWithZone, Profile, OperationType } from '@/types'
 import type { TablesUpdate, TablesInsert } from '@/types/database.types'
 import type { ZoneStatus } from '@/types/roles'
 
@@ -17,171 +24,311 @@ interface TaskMasterDashboardProps {
   zones: ZoneWithState[]
   activity: ActivityWithZone[]
   workers: Profile[]
+  operations: OperationType[]
   userId: string
   onZoneUpdate: (zoneId: string, status: ZoneStatus, extra?: Partial<TablesUpdate<'zone_states'>>) => Promise<unknown>
   onRefresh: () => void
 }
 
-type Tab = 'map' | 'overview' | 'feed'
+type Tab = 'board' | 'overview' | 'feed'
+
+const tabs: Array<{ id: Tab; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
+  { id: 'board', label: 'Задачи', icon: LayoutGrid },
+  { id: 'overview', label: 'Обзор', icon: ListChecks },
+  { id: 'feed', label: 'Лента', icon: Sparkles },
+]
 
 export function TaskMasterDashboard({
-  zones, activity, workers, userId, onZoneUpdate, onRefresh,
+  zones,
+  activity,
+  workers,
+  operations,
+  userId,
+  onZoneUpdate,
+  onRefresh,
 }: TaskMasterDashboardProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('map')
+  const [activeTab, setActiveTab] = useState<Tab>('board')
   const [filter, setFilter] = useState('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
-  const stats = useMemo(() => ({
-    in_progress: zones.filter((z) => z.status === 'in_progress').length,
-    attention: zones.filter((z) => z.status === 'attention').length,
-    completed: zones.filter((z) => z.status === 'completed').length,
-    idle: zones.filter((z) => z.status === 'idle').length,
-  }), [zones])
+  const stats = useMemo(() => getZoneStats(zones.map((zone) => zone.status)), [zones])
 
-  const handleAssignOperation = useCallback(async (zoneId: string, opCode: string) => {
-    try {
-      const { data: opType } = await supabase.from('operation_types').select('id').eq('code', opCode).single()
-      if (!opType) { toast.error('Операция не найдена'); return }
+  const handleAssignOperation = useCallback(
+    async (zoneId: string, operationId: string) => {
+      const operation = operations.find((item) => item.id === operationId)
+      if (!operation) {
+        toast.error('Операция не найдена')
+        return
+      }
 
-      const update: TablesUpdate<'zone_states'> = { operation_type_id: opType.id, updated_at: new Date().toISOString() }
+      const update: TablesUpdate<'zone_states'> = {
+        operation_type_id: operation.id,
+        updated_at: new Date().toISOString(),
+      }
+
       const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
 
       if (!error) {
         const log: TablesInsert<'activity_log'> = {
-          zone_id: zoneId, user_id: userId,
-          action: 'operation_assigned', details: { op_code: opCode },
+          zone_id: zoneId,
+          user_id: userId,
+          action: 'operation_assigned',
+          details: { op_id: operation.id, op_code: operation.code, op_label: operation.label },
         }
         await supabase.from('activity_log').insert(log)
-        toast.success(`Операция ${opCode} назначена`)
+        toast.success(`Операция «${operation.label}» назначена`)
         onRefresh()
-      } else {
-        toast.error('Ошибка назначения')
+        return
       }
-    } catch {
-      toast.error('Сетевая ошибка при назначении операции')
-    }
-  }, [onRefresh, supabase, userId])
 
-  const handleAssignWorker = useCallback(async (zoneId: string, workerId: string | null) => {
-    try {
-      const update: TablesUpdate<'zone_states'> = { assigned_worker_id: workerId, updated_at: new Date().toISOString() }
+      toast.error('Не удалось назначить операцию')
+    },
+    [onRefresh, operations, supabase, userId],
+  )
+
+  const handleAssignWorker = useCallback(
+    async (zoneId: string, workerId: string | null) => {
+      const update: TablesUpdate<'zone_states'> = {
+        assigned_worker_id: workerId,
+        updated_at: new Date().toISOString(),
+      }
+
       const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
+
       if (!error) {
+        const worker = workers.find((item) => item.id === workerId)
         const log: TablesInsert<'activity_log'> = {
-          zone_id: zoneId, user_id: userId,
-          action: 'worker_assigned', details: { worker_id: workerId },
+          zone_id: zoneId,
+          user_id: userId,
+          action: 'worker_assigned',
+          details: { worker_id: workerId, worker_name: worker?.display_name ?? null },
         }
         await supabase.from('activity_log').insert(log)
         toast.success(workerId ? 'Исполнитель назначен' : 'Исполнитель снят')
         onRefresh()
-      } else {
-        toast.error('Ошибка назначения исполнителя')
+        return
       }
-    } catch {
-      toast.error('Сетевая ошибка при назначении исполнителя')
-    }
-  }, [onRefresh, supabase, userId])
 
-  const handleSaveNote = useCallback(async (zoneId: string, note: string) => {
-    try {
-      const update: TablesUpdate<'zone_states'> = { notes: note, updated_at: new Date().toISOString() }
-      const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
-      if (!error) {
-        const log: TablesInsert<'activity_log'> = {
-          zone_id: zoneId, user_id: userId,
-          action: 'note_added', details: { note },
+      toast.error('Не удалось назначить исполнителя')
+    },
+    [onRefresh, supabase, userId, workers],
+  )
+
+  const handleSaveNote = useCallback(
+    async (zoneId: string, note: string) => {
+      try {
+        const update: TablesUpdate<'zone_states'> = {
+          notes: note,
+          updated_at: new Date().toISOString(),
         }
-        await supabase.from('activity_log').insert(log)
-        onRefresh()
-      }
-      return error
-    } catch {
-      return { message: 'network_error' }
-    }
-  }, [onRefresh, supabase, userId])
+        const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zoneId)
 
-  const handleClearAll = useCallback(async () => {
-    if (!confirm('Сбросить все зоны в статус "Не начато"? Это действие нельзя отменить.')) return
-    try {
-      const update: TablesUpdate<'zone_states'> = {
-        status: 'idle',
-        operation_type_id: null,
-        assigned_worker_id: null,
-        notes: null,
-        started_at: null,
-        updated_at: new Date().toISOString(),
+        if (!error) {
+          const log: TablesInsert<'activity_log'> = {
+            zone_id: zoneId,
+            user_id: userId,
+            action: 'note_added',
+            details: { note },
+          }
+          await supabase.from('activity_log').insert(log)
+          onRefresh()
+        }
+
+        return error
+      } catch {
+        return { message: 'network_error' }
       }
-      const { error } = await supabase.from('zone_states').update(update).neq('zone_id', '')
-      if (!error) {
-        toast.success('Все зоны сброшены')
-        onRefresh()
-      } else {
-        toast.error('Ошибка сброса зон')
-      }
-    } catch {
-      toast.error('Сетевая ошибка при сбросе зон')
+    },
+    [onRefresh, supabase, userId],
+  )
+
+  const handleResetBoard = useCallback(async () => {
+    const update: TablesUpdate<'zone_states'> = {
+      status: 'new',
+      operation_type_id: null,
+      assigned_worker_id: null,
+      notes: null,
+      started_at: null,
+      updated_at: new Date().toISOString(),
     }
+
+    const { error } = await supabase.from('zone_states').update(update).neq('zone_id', '')
+
+    if (!error) {
+      toast.success('Все зоны сброшены в новые')
+      onRefresh()
+      return
+    }
+
+    toast.error('Не удалось сбросить зоны')
   }, [onRefresh, supabase])
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex border-b border-border-soft bg-canvas sticky top-14 z-20">
-        {([
-          { id: 'map',      label: 'Карта' },
-          { id: 'overview', label: 'Статус' },
-          { id: 'feed',     label: 'Лента' },
-        ] as const).map(({ id, label }) => (
-          <button key={id} onClick={() => setActiveTab(id)}
-            className={cn(
-              'flex-1 py-3 font-mono text-[11px] tracking-wide uppercase border-b-2 transition-colors',
-              activeTab === id ? 'border-accent text-text-1' : 'border-transparent text-text-4 hover:text-text-3'
-            )}
-          >
-            {label}
-          </button>
-        ))}
+    <div className="mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 px-4 py-6">
+      <div className="space-y-1">
+        <h1 className="text-[24px] font-semibold tracking-tight text-text-1">Операционный центр</h1>
+        <p className="text-[13px] text-text-3">Постановка задач, контроль статусов и управление исполнителями без лишнего шума.</p>
       </div>
 
-      {activeTab === 'map' && (
-        <div className="flex flex-col flex-1 min-h-0">
-          <MapControls filter={filter} onFilterChange={setFilter} stats={stats} />
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <FloorPlan zones={zones} selectedId={selectedId} filter={filter} onSelectRoom={setSelectedId} />
-            <div className="flex justify-end">
-              <button onClick={handleClearAll}
-                className="px-4 py-2 rounded bg-danger-soft border border-danger/20 text-danger font-mono text-[10px] tracking-wide uppercase hover:bg-danger/15 transition-colors"
-              >
-                Сбросить все зоны
-              </button>
+      <div className="grid gap-4 sm:grid-cols-4">
+        <MetricCard label="Новые" value={stats.new} tone="slate" />
+        <MetricCard label="В работе" value={stats.in_progress} tone="amber" />
+        <MetricCard label="На проверке" value={stats.review} tone="blue" />
+        <MetricCard label="Готово" value={stats.done} tone="emerald" />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <AppButton key={id} variant={activeTab === id ? 'primary' : 'secondary'} size="sm" icon={<Icon size={13} />} onClick={() => setActiveTab(id)}>
+            {label}
+          </AppButton>
+        ))}
+        <div className="ml-auto">
+          <AppButton variant="danger" size="sm" icon={<RefreshCcw size={13} />} onClick={handleResetBoard}>
+            Сбросить все зоны
+          </AppButton>
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {activeTab === 'board' && (
+          <motion.div
+            key="board"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22 }}
+            className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1.2fr)_380px]"
+          >
+            <div className="min-h-0 space-y-4">
+              <AppSurface className="overflow-hidden">
+                <MapControls filter={filter} onFilterChange={setFilter} stats={stats} />
+                <div className="p-4">
+                  <FloorPlan zones={zones} selectedId={selectedId} filter={filter} onSelectRoom={setSelectedId} />
+                </div>
+              </AppSurface>
             </div>
-          </div>
-        </div>
-      )}
 
-      {activeTab === 'overview' && (
-        <div className="flex-1 overflow-y-auto p-4">
-          <OverviewPanel zones={zones} />
-        </div>
-      )}
+            <AppSurface className="min-h-0 overflow-hidden">
+              <TaskLane zones={zones} workers={workers} onSelect={setSelectedId} />
+            </AppSurface>
+          </motion.div>
+        )}
 
-      {activeTab === 'feed' && (
-        <div className="flex-1 overflow-y-auto">
-          <FeedPanel activity={activity} />
-        </div>
-      )}
+        {activeTab === 'overview' && (
+          <motion.div
+            key="overview"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22 }}
+          >
+            <OverviewPanel zones={zones} />
+          </motion.div>
+        )}
+
+        {activeTab === 'feed' && (
+          <motion.div
+            key="feed"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22 }}
+          >
+            <AppSurface className="overflow-hidden">
+              <FeedPanel activity={activity} />
+            </AppSurface>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ZoneDetailDrawer
         zoneId={selectedId}
         zones={zones}
         role="taskmaster"
         workers={workers}
+        operations={operations}
         onClose={() => setSelectedId(null)}
         onStatusChange={onZoneUpdate}
         onAssignOperation={handleAssignOperation}
         onAssignWorker={handleAssignWorker}
         onSaveNote={handleSaveNote}
       />
+    </div>
+  )
+}
+
+function MetricCard({ label, value, tone }: { label: string; value: number; tone: 'slate' | 'amber' | 'blue' | 'emerald' }) {
+  const palette = {
+    slate: 'text-slate-700 bg-slate-50',
+    amber: 'text-amber-700 bg-amber-50',
+    blue: 'text-blue-700 bg-blue-50',
+    emerald: 'text-emerald-700 bg-emerald-50',
+  }
+
+  return (
+    <AppSurface className={cn('p-4', palette[tone])}>
+      <div className="font-mono text-[10px] uppercase tracking-wide opacity-70">{label}</div>
+      <div className="mt-2 text-[28px] font-semibold leading-none">{value}</div>
+    </AppSurface>
+  )
+}
+
+function TaskLane({
+  zones,
+  workers,
+  onSelect,
+}: {
+  zones: ZoneWithState[]
+  workers: Profile[]
+  onSelect: (zoneId: string) => void
+}) {
+  const visibleZones = useMemo(
+    () =>
+      [...zones].sort((left, right) => {
+        const statusOrder: ZoneStatus[] = ['review', 'in_progress', 'new', 'done']
+        return statusOrder.indexOf(left.status) - statusOrder.indexOf(right.status)
+      }),
+    [zones],
+  )
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="border-b border-slate-100 px-5 py-4">
+        <h2 className="text-[15px] font-medium text-text-1">Все зоны</h2>
+        <p className="text-[12px] text-text-4">Быстрый доступ к задаче, операции и исполнителю.</p>
+      </div>
+      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+        {visibleZones.map((zone) => {
+          const room = ROOMS.find((item) => item.id === zone.zone_id)
+          if (!room) return null
+
+          const worker = workers.find((item) => item.id === zone.assigned_worker_id)
+
+          return (
+            <button
+              key={zone.zone_id}
+              onClick={() => onSelect(zone.zone_id)}
+              className="w-full rounded-2xl border border-slate-100 bg-white px-4 py-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-200"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-mono text-[10px] uppercase tracking-wide text-text-4">{room.code}</div>
+                  <div className="mt-1 text-[15px] font-medium text-text-1">{room.name}</div>
+                  <div className="mt-1 text-[12px] text-text-3">
+                    {zone.operation_types?.label ?? 'Операция не назначена'}
+                  </div>
+                  <div className="mt-1 text-[12px] text-text-4">
+                    {worker?.display_name ?? 'Исполнитель не назначен'}
+                  </div>
+                </div>
+                <StatusBadge status={zone.status} size="sm" />
+              </div>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

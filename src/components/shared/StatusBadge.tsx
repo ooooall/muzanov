@@ -26,7 +26,7 @@ export function StatusBadge({ status, size = 'md', showDot = true, className }: 
           className={cn(
             'rounded-full flex-shrink-0',
             size === 'sm' ? 'w-1.5 h-1.5' : 'w-2 h-2',
-            status === 'in_progress' && 'animate-pulse-slow'
+            (status === 'in_progress' || status === 'review') && 'animate-pulse-slow'
           )}
           style={{ background: meta.color }}
         />
@@ -46,7 +46,7 @@ export function StatusDot({ status, size = 8, className }: StatusDotProps) {
   const color = STATUSES[status]?.color ?? '#5a5a5a'
   return (
     <span
-      className={cn('rounded-full flex-shrink-0', status === 'in_progress' && 'animate-pulse-slow', className)}
+      className={cn('rounded-full flex-shrink-0', (status === 'in_progress' || status === 'review') && 'animate-pulse-slow', className)}
       style={{ width: size, height: size, background: color, display: 'inline-block' }}
     />
   )

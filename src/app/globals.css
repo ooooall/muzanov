@@ -2,20 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ================================================================
-   SAFE AREAS & LAYOUT VARIABLES
-   ================================================================ */
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bot: env(safe-area-inset-bottom, 0px);
-  --safe-l:   env(safe-area-inset-left, 0px);
-  --safe-r:   env(safe-area-inset-right, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
 }
 
-/* ================================================================
-   BASE
-   ================================================================ */
-html, body {
+html,
+body {
   height: 100%;
   background: #f8fafc;
   color: #0f172a;
@@ -23,6 +18,12 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.18) transparent;
+}
+
+html {
+  touch-action: pan-x pan-y;
 }
 
 body {
@@ -32,38 +33,73 @@ body {
   padding-right: var(--safe-r);
 }
 
+* {
+  box-sizing: border-box;
+}
+
 ::selection {
-  background: rgba(245, 197, 24, 0.12);
+  background: rgba(15, 23, 42, 0.08);
   color: #0f172a;
 }
 
-/* ================================================================
-   SCROLLBARS
-   ================================================================ */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(15,23,42,0.18); border-radius: 6px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(15,23,42,0.26); }
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
 
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-/* ================================================================
-   UTILITIES
-   ================================================================ */
-.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
-.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.18);
+}
 
-/* z-index layer for the drawer */
-.z-60 { z-index: 60; }
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.26);
+}
 
-/* ================================================================
-   FORM ELEMENTS RESET
-   ================================================================ */
-input, textarea, select, button {
-  font-family: inherit;
-  font-size: inherit;
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.z-60 {
+  z-index: 60;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
   color: inherit;
+}
+
+button,
+select,
+input,
+textarea {
+  transition:
+    background-color 0.24s ease,
+    border-color 0.24s ease,
+    box-shadow 0.24s ease,
+    color 0.24s ease,
+    opacity 0.24s ease,
+    transform 0.24s ease;
 }
 
 input:-webkit-autofill,
@@ -74,14 +110,18 @@ input:-webkit-autofill:focus {
   caret-color: #0f172a;
 }
 
-/* ================================================================
-   ANIMATIONS
-   ================================================================ */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
-  animation: fadeIn 200ms ease forwards;
+  animation: fadeInUp 220ms ease forwards;
 }

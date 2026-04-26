@@ -100,7 +100,7 @@ export type Database = {
       zone_states: {
         Row: {
           zone_id: string
-          status: 'idle' | 'scheduled' | 'in_progress' | 'paused' | 'attention' | 'completed' | 'rework'
+          status: 'new' | 'in_progress' | 'review' | 'done'
           operation_type_id: string | null
           assigned_worker_id: string | null
           notes: string | null
@@ -109,7 +109,7 @@ export type Database = {
         }
         Insert: {
           zone_id: string
-          status?: 'idle' | 'scheduled' | 'in_progress' | 'paused' | 'attention' | 'completed' | 'rework'
+          status?: 'new' | 'in_progress' | 'review' | 'done'
           operation_type_id?: string | null
           assigned_worker_id?: string | null
           notes?: string | null
@@ -117,7 +117,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          status?: 'idle' | 'scheduled' | 'in_progress' | 'paused' | 'attention' | 'completed' | 'rework'
+          status?: 'new' | 'in_progress' | 'review' | 'done'
           operation_type_id?: string | null
           assigned_worker_id?: string | null
           notes?: string | null
@@ -194,7 +194,7 @@ export type Database = {
     }
     Enums: {
       user_role: 'viewer' | 'worker' | 'taskmaster'
-      zone_status: 'idle' | 'scheduled' | 'in_progress' | 'paused' | 'attention' | 'completed' | 'rework'
+      zone_status: 'new' | 'in_progress' | 'review' | 'done'
     }
     CompositeTypes: {
       [_ in never]: never

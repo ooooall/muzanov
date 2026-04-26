@@ -1,6 +1,7 @@
 type AppStorageValue = string | number | boolean | null | Record<string, unknown> | Array<unknown>
 
 const APP_PREFIX = 'muzanov_ops'
+export const ROLE_STORAGE_KEY = 'auth:role'
 
 function getSafeStorage(): Storage | null {
   if (typeof window === 'undefined') return null
@@ -44,6 +45,12 @@ export const appStorage = {
     const storage = getSafeStorage()
     if (!storage) return
     storage.removeItem(scopedKey(key))
+  },
+
+  has(key: string) {
+    const storage = getSafeStorage()
+    if (!storage) return false
+    return storage.getItem(scopedKey(key)) !== null
   },
 
   clearSessionScope() {

@@ -1,59 +1,43 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import { STATUSES } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 import type { ZoneStatus } from '@/types/roles'
 
-const FILTER_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: 'all',        label: 'Все' },
-  { value: 'in_progress',label: 'В работе' },
-  { value: 'attention',  label: 'Внимание' },
-  { value: 'completed',  label: 'Готово' },
-  { value: 'idle',       label: 'Свободно' },
+const FILTER_OPTIONS: Array<{ value: 'all' | ZoneStatus; label: string }> = [
+  { value: 'all', label: 'Все' },
+  { value: 'new', label: 'Новые' },
+  { value: 'in_progress', label: 'В работе' },
+  { value: 'review', label: 'На проверке' },
+  { value: 'done', label: 'Готово' },
 ]
 
 interface MapControlsProps {
   filter: string
-  onFilterChange: (f: string) => void
-  stats?: {
-    in_progress: number
-    attention: number
-    completed: number
-    idle: number
-  }
+  onFilterChange: (filter: string) => void
+  stats?: Record<ZoneStatus, number>
 }
 
 export function MapControls({ filter, onFilterChange, stats }: MapControlsProps) {
   return (
-    <div className="flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto scrollbar-hide border-b border-border-soft">
+    <div className="flex items-center gap-2 overflow-x-auto border-b border-slate-100 px-4 py-3 scrollbar-hide">
       {FILTER_OPTIONS.map(({ value, label }) => {
         const isActive = filter === value
-        const statusColor = value !== 'all'
-          ? STATUSES[value as ZoneStatus]?.color
-          : undefined
-        const count = stats && value !== 'all' ? stats[value as keyof typeof stats] : undefined
+        const statusColor = value !== 'all' ? STATUSES[value].color : undefined
+        const count = value !== 'all' ? stats?.[value] : undefined
 
         return (
           <button
             key={value}
             onClick={() => onFilterChange(value)}
             className={cn(
-              'flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill border font-mono text-[10px] tracking-wide uppercase transition-all',
-              isActive
-                ? 'bg-hover border-border-strong text-text-1'
-                : 'border-border-soft text-text-4 hover:text-text-3 hover:border-border'
+              'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide transition-all duration-200',
+              isActive ? 'border-slate-200 bg-slate-50 text-text-1 shadow-sm' : 'border-slate-100 bg-white text-text-4 hover:border-slate-200 hover:text-text-2',
             )}
           >
-            {statusColor && (
-              <span
-                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ background: statusColor }}
-              />
-            )}
+            {statusColor && <span className="h-1.5 w-1.5 rounded-full" style={{ background: statusColor }} />}
             {label}
-            {count !== undefined && count > 0 && (
-              <span className="text-[9px] opacity-70">{count}</span>
-            )}
+            {count !== undefined && count > 0 && <span className="opacity-60">{count}</span>}
           </button>
         )
       })}

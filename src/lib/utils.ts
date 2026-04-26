@@ -2,6 +2,7 @@ import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { STATUSES } from './constants'
 import type { ZoneStatus } from '@/types/roles'
+import { isActiveStatus as checkActiveStatus } from './zone-workflow'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -54,7 +55,7 @@ export function getStatusSub(status: ZoneStatus): string {
 }
 
 export function isActiveStatus(status: ZoneStatus): boolean {
-  return status === 'in_progress' || status === 'attention'
+  return checkActiveStatus(status)
 }
 
 export function pluralRu(n: number, one: string, few: string, many: string): string {

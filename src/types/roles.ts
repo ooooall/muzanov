@@ -1,13 +1,10 @@
 export type UserRole = 'viewer' | 'worker' | 'taskmaster'
 
 export type ZoneStatus =
-  | 'idle'
-  | 'scheduled'
+  | 'new'
   | 'in_progress'
-  | 'paused'
-  | 'attention'
-  | 'completed'
-  | 'rework'
+  | 'review'
+  | 'done'
 
 export type ActivityAction =
   | 'status_change'
