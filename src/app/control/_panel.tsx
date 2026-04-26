@@ -22,6 +22,7 @@ type Tab = 'zones' | 'workers' | 'operations' | 'danger'
 
 export default function ControlPanel({ zones, workers, userId }: Props) {
   const [tab, setTab] = useState<Tab>('zones')
+  const [userFilter, setUserFilter] = useState<'pending' | 'active' | 'rejected'>('pending')
   const router = useRouter()
   const supabase = createClient()
 
@@ -74,6 +75,23 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
   async function changeWorkerRole(workerId: string, role: 'worker' | 'taskmaster' | 'viewer') {
     const { error } = await supabase.from('profiles').update({ role }).eq('id', workerId)
     if (!error) { toast.success(`Роль: ${role}`); router.refresh() }
+  }
+
+  async function changeWorkerStatus(workerId: string, status: 'pending' | 'active' | 'rejected') {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', workerId)
+
+    if (!error) {
+      const labels: Record<'pending' | 'active' | 'rejected', string> = {
+        pending: 'Ожидает',
+        active: 'Активирован',
+        rejected: 'Отклонен',
+      }
+      toast.success(labels[status])
+      router.refresh()
+    }
   }
 
   const TABS = [
@@ -182,19 +200,73 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
 
       {tab === 'workers' && (
         <div className="space-y-2">
+          <div className="flex gap-1 p-1 rounded-lg bg-elevated border border-border">
+            {([
+              ['pending', 'Ожидают'],
+              ['active', 'Активные'],
+              ['rejected', 'Отклонены'],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setUserFilter(id)}
+                className={cn(
+                  'flex-1 py-2 rounded font-mono text-[10px] tracking-wide uppercase transition-colors',
+                  userFilter === id ? 'bg-active text-text-1' : 'text-text-4 hover:text-text-3'
+                )}
+              >
+                {label} ({workers.filter(w => w.status === id).length})
+              </button>
+            ))}
+          </div>
+
           {workers.length === 0 ? (
             <div className="py-12 text-center text-text-4 font-mono text-[11px]">
               Нет зарегистрированных пользователей
             </div>
           ) : (
-            workers.map(w => (
+            workers
+              .filter(w => w.status === userFilter)
+              .map(w => (
               <div key={w.id} className="flex items-center gap-4 p-4 rounded-lg bg-elevated border border-border">
                 <div className="flex-1 min-w-0">
-                  <div className="text-[14px] font-medium text-text-1">{w.display_name ?? 'Без имени'}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-[14px] font-medium text-text-1">{w.display_name ?? 'Без имени'}</div>
+                    <span
+                      className={cn(
+                        'px-2 py-0.5 rounded border font-mono text-[9px] uppercase tracking-wide',
+                        w.status === 'active' && 'border-success/30 bg-success-soft text-success',
+                        w.status === 'pending' && 'border-accent/30 bg-accent-soft text-accent',
+                        w.status === 'rejected' && 'border-danger/30 bg-danger-soft text-danger'
+                      )}
+                    >
+                      {w.status}
+                    </span>
+                  </div>
                   <div className="text-[11px] text-text-4 font-mono mt-0.5">{w.id.slice(0, 8)}…</div>
                   <div className="text-[11px] text-text-4 mt-0.5">{formatRelative(w.created_at)}</div>
                 </div>
-                <div className="flex gap-1">
+
+                <div className="flex flex-col gap-1">
+                  <div className="flex gap-1">
+                    {w.status !== 'active' && (
+                      <button
+                        onClick={() => changeWorkerStatus(w.id, 'active')}
+                        className="px-2.5 py-1 rounded border border-success/30 bg-success-soft text-success font-mono text-[9px] tracking-wide uppercase"
+                      >
+                        Approve
+                      </button>
+                    )}
+                    {w.status !== 'rejected' && (
+                      <button
+                        onClick={() => changeWorkerStatus(w.id, 'rejected')}
+                        className="px-2.5 py-1 rounded border border-danger/30 bg-danger-soft text-danger font-mono text-[9px] tracking-wide uppercase"
+                      >
+                        Reject
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex gap-1">
                   {(['viewer', 'worker', 'taskmaster'] as const).map(r => (
                     <button key={r} onClick={() => changeWorkerRole(w.id, r)}
                       className={cn(
@@ -207,6 +279,7 @@ export default function ControlPanel({ zones, workers, userId }: Props) {
                       {r}
                     </button>
                   ))}
+                  </div>
                 </div>
               </div>
             ))

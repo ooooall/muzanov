@@ -10,13 +10,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        base:     '#000000',
-        canvas:   '#0a0a0a',
-        elevated: '#121212',
-        panel:    '#151515',
-        panel2:   '#181818',
-        hover:    '#1e1e1e',
-        active:   '#242424',
+        base:     '#f8fafc',
+        canvas:   '#f1f5f9',
+        elevated: '#ffffff',
+        panel:    '#ffffff',
+        panel2:   '#f8fafc',
+        hover:    '#eef2f7',
+        active:   '#e2e8f0',
 
         accent:   '#f5c518',
         'accent-soft': 'rgba(245,197,24,0.10)',
@@ -25,17 +25,17 @@ const config: Config = {
         danger:   '#aa2a3a',
         'danger-soft': 'rgba(170,42,58,0.10)',
 
-        border: 'rgba(255,255,255,0.07)',
-        'border-soft':   'rgba(255,255,255,0.04)',
-        'border-strong': 'rgba(255,255,255,0.11)',
-        'border-bright': 'rgba(255,255,255,0.20)',
+        border: 'rgba(15,23,42,0.12)',
+        'border-soft':   'rgba(15,23,42,0.06)',
+        'border-strong': 'rgba(15,23,42,0.18)',
+        'border-bright': 'rgba(15,23,42,0.26)',
 
         text: {
-          1: '#f5f5f5',
-          2: '#c0c0c0',
-          3: '#8a8a8a',
-          4: '#5a5a5a',
-          5: '#3a3a3a',
+          1: '#0f172a',
+          2: '#1e293b',
+          3: '#475569',
+          4: '#64748b',
+          5: '#94a3b8',
         },
 
         status: {
@@ -63,10 +63,10 @@ const config: Config = {
       },
 
       boxShadow: {
-        sm:   '0 2px 8px rgba(0,0,0,0.25)',
-        DEFAULT: '0 4px 16px rgba(0,0,0,0.30)',
-        lg:   '0 4px 20px rgba(0,0,0,0.30)',
-        drawer: '0 -8px 30px rgba(0,0,0,0.4)',
+        sm:   '0 2px 8px rgba(15,23,42,0.08)',
+        DEFAULT: '0 8px 24px rgba(15,23,42,0.10)',
+        lg:   '0 12px 32px rgba(15,23,42,0.12)',
+        drawer: '0 -8px 30px rgba(15,23,42,0.16)',
       },
 
       letterSpacing: {
