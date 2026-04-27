@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Toaster } from 'sonner'
+import { NavigationProgress } from '@/components/shared/NavigationProgress'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -21,13 +22,15 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#f8fafc',
+  // Dark status bar so it blends with the header background
+  themeColor: '#1e1e26',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru">
       <body className="bg-base text-text-1 font-sans antialiased">
+        <NavigationProgress />
         {children}
         <Toaster
           theme="light"

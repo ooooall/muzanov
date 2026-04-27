@@ -196,17 +196,12 @@ export function TaskMasterDashboard({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.22 }}
-            className="grid flex-1 gap-4"
           >
             <AppSurface className="overflow-hidden">
               <MapControls filter={filter} onFilterChange={setFilter} stats={stats} />
               <div className="p-3 sm:p-4">
                 <FloorPlan zones={zones} selectedId={selectedId} filter={filter} onSelectRoom={setSelectedId} />
               </div>
-            </AppSurface>
-
-            <AppSurface className="min-h-0 overflow-hidden">
-              <TaskLane zones={zones} workers={workers} onSelect={setSelectedId} />
             </AppSurface>
           </motion.div>
         )}
