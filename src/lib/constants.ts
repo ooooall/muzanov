@@ -8,23 +8,19 @@ export const STATUSES: Record<ZoneStatus, { label: string; sub: string; color: s
   done: { label: 'Готово', sub: 'DONE', color: '#059669' },
 }
 
-// ─── Map canvas ────────────────────────────────────────────────────────────────
-// viewBox: 755 × 1024 (matches Figma layout)
-// All room coordinates are in this space.
+// viewBox 755 × 1024. All rooms inset by 3 px on every side → 6 px gap between
+// adjacent rooms (visual "wall" thickness).
 //
-// Column layout (x):
-//   20–150  left column  (bedroom_small / bath / wc)
-//   150–540 center       (bedroom_medium / corridor)
-//   540–735 right column (wardrobe / entry)
-//   735+    right margin
+// Logical grid (before inset):
+//   left col  x: 20–150   bedroom_small / bath / wc
+//   center    x: 150–540  bedroom_medium / corridor
+//   right col x: 540–735  wardrobe / entry
 //
-// Row layout (y):
-//   20–245   top row     (bedrooms + wardrobe)
-//   245–435  mid row     (corridor horizontal + entry)
-//   435–530  bath
-//   530–625  wc
-//   625–1004 bottom row  (kitchen + living)
-// ───────────────────────────────────────────────────────────────────────────────
+//   top row   y:  20–245  bedrooms + wardrobe
+//   mid row   y: 245–435  corridor horizontal + entry
+//   bath      y: 435–530
+//   wc        y: 530–625
+//   bottom    y: 625–1004 kitchen + living
 export const MAP_VIEWBOX = { w: 755, h: 1024 } as const
 
 export const ROOMS: RoomDef[] = [
@@ -34,8 +30,7 @@ export const ROOMS: RoomDef[] = [
     name: 'Спальня маленькая',
     short: 'Спальня M',
     area: 11.5,
-    // Left column, top — x:20–150, y:20–435
-    shape: { type: 'rect', x: 20, y: 20, w: 130, h: 415 },
+    shape: { type: 'rect', x: 23, y: 23, w: 124, h: 409 },
     labelAt: { x: 85, y: 228 },
   },
   {
@@ -44,9 +39,8 @@ export const ROOMS: RoomDef[] = [
     name: 'Спальня средняя',
     short: 'Спальня S',
     area: 14,
-    // Center, top — x:150–540, y:20–245
-    shape: { type: 'rect', x: 150, y: 20, w: 390, h: 225 },
-    labelAt: { x: 345, y: 132 },
+    shape: { type: 'rect', x: 153, y: 23, w: 384, h: 219 },
+    labelAt: { x: 345, y: 133 },
   },
   {
     id: 'wardrobe',
@@ -54,9 +48,8 @@ export const ROOMS: RoomDef[] = [
     name: 'Гардероб',
     short: 'Гардероб',
     area: 3,
-    // Right column, top — x:540–735, y:20–245
-    shape: { type: 'rect', x: 540, y: 20, w: 195, h: 225 },
-    labelAt: { x: 637, y: 132 },
+    shape: { type: 'rect', x: 543, y: 23, w: 189, h: 219 },
+    labelAt: { x: 637, y: 133 },
   },
   {
     id: 'entry',
@@ -64,8 +57,7 @@ export const ROOMS: RoomDef[] = [
     name: 'Прихожая',
     short: 'Прихожая',
     area: 4.5,
-    // Right column, mid — x:540–735, y:245–435
-    shape: { type: 'rect', x: 540, y: 245, w: 195, h: 190 },
+    shape: { type: 'rect', x: 543, y: 248, w: 189, h: 184 },
     labelAt: { x: 637, y: 340 },
   },
   {
@@ -74,9 +66,8 @@ export const ROOMS: RoomDef[] = [
     name: 'Ванная',
     short: 'Ванная',
     area: 2.6,
-    // Left column — x:20–150, y:435–530
-    shape: { type: 'rect', x: 20, y: 435, w: 130, h: 95 },
-    labelAt: { x: 85, y: 482 },
+    shape: { type: 'rect', x: 23, y: 438, w: 124, h: 89 },
+    labelAt: { x: 85, y: 483 },
   },
   {
     id: 'wc',
@@ -84,9 +75,8 @@ export const ROOMS: RoomDef[] = [
     name: 'Туалет',
     short: 'Туалет',
     area: 1.2,
-    // Left column — x:20–150, y:530–625
-    shape: { type: 'rect', x: 20, y: 530, w: 130, h: 95 },
-    labelAt: { x: 85, y: 577 },
+    shape: { type: 'rect', x: 23, y: 533, w: 124, h: 89 },
+    labelAt: { x: 85, y: 578 },
   },
   {
     id: 'corridor',
@@ -94,12 +84,11 @@ export const ROOMS: RoomDef[] = [
     name: 'Коридор / холл',
     short: 'Коридор',
     area: 8.5,
-    // L-shaped path: horizontal bar x:150–540, y:245–435
-    //                vertical leg   x:150–205, y:435–625
-    // Q curves add rounded outer/inner corners (~15px radius)
+    // Original grid: x:150–540 (upper), x:150–205 (leg), y:245–625
+    // Each outer edge inset by 3 px → 6 px gap to adjacent rooms
     shape: {
       type: 'path',
-      d: 'M 150 245 H 525 Q 540 245 540 260 V 420 Q 540 435 525 435 H 220 Q 205 435 205 450 V 610 Q 205 625 190 625 H 165 Q 150 625 150 610 V 260 Q 150 245 165 245 Z',
+      d: 'M 153 248 H 522 Q 537 248 537 263 V 417 Q 537 432 522 432 H 217 Q 202 432 202 447 V 607 Q 202 622 187 622 H 162 Q 153 622 153 607 V 263 Q 153 248 168 248 Z',
     },
     labelAt: { x: 345, y: 350 },
   },
@@ -109,9 +98,8 @@ export const ROOMS: RoomDef[] = [
     name: 'Кухня',
     short: 'Кухня',
     area: 10.2,
-    // Bottom-left — x:20–205, y:625–1004
-    shape: { type: 'rect', x: 20, y: 625, w: 185, h: 379 },
-    labelAt: { x: 112, y: 814 },
+    shape: { type: 'rect', x: 23, y: 628, w: 179, h: 373 },
+    labelAt: { x: 112, y: 815 },
   },
   {
     id: 'living',
@@ -119,8 +107,7 @@ export const ROOMS: RoomDef[] = [
     name: 'Гостиная / спальня',
     short: 'Гостиная',
     area: 20.5,
-    // Bottom-right — x:205–735, y:435–1004
-    shape: { type: 'rect', x: 205, y: 435, w: 530, h: 569 },
+    shape: { type: 'rect', x: 208, y: 438, w: 524, h: 563 },
     labelAt: { x: 470, y: 720 },
   },
 ]
