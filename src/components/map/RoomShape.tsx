@@ -56,7 +56,7 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
 
   function renderShape(extraProps: Record<string, string | number>) {
     if (shape.kind === 'rect') return <rect {...shape.props} {...extraProps} />
-    return <polygon {...shape.props} strokeLinejoin="round" {...extraProps} />
+    return <polygon {...shape.props} strokeLinejoin="miter" {...extraProps} />
   }
 
   return (

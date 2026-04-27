@@ -9,9 +9,9 @@ import { createClient } from '@/lib/supabase/client'
 import { ROOMS } from '@/lib/constants'
 import { AppButton } from '@/components/shared/AppButton'
 import { AppSurface } from '@/components/shared/AppSurface'
-import { FieldLabel, SelectField, TextInput } from '@/components/shared/AppField'
+import { AppSelect, FieldLabel, TextInput } from '@/components/shared/AppField'
 import { StatusBadge } from '@/components/shared/StatusBadge'
-import { cn, pluralRu } from '@/lib/utils'
+import { pluralRu } from '@/lib/utils'
 import { buildZoneUpdate } from '@/lib/zone-workflow'
 import type { OperationType, Profile, ZoneWithState } from '@/types'
 import type { TablesUpdate } from '@/types/database.types'
@@ -300,40 +300,34 @@ function TasksTab({
         <div className="space-y-3">
           <div className="space-y-2">
             <FieldLabel>Зона</FieldLabel>
-            <SelectField value={zoneId} onChange={(event) => setZoneId(event.target.value)}>
-              <option value="">Выберите зону</option>
-              {ROOMS.map((room) => (
-                <option key={room.id} value={room.id}>
-                  {room.name} ({room.code})
-                </option>
-              ))}
-            </SelectField>
+            <AppSelect
+              value={zoneId}
+              onChange={setZoneId}
+              placeholder="Выберите зону"
+              options={ROOMS.map((room) => ({ value: room.id, label: `${room.name} (${room.code})` }))}
+            />
           </div>
 
           <div className="space-y-2">
             <FieldLabel>Операция</FieldLabel>
-            <SelectField value={operationId} onChange={(event) => setOperationId(event.target.value)}>
-              <option value="">Выберите операцию</option>
-              {operations.map((operation) => (
-                <option key={operation.id} value={operation.id}>
-                  {operation.label}
-                </option>
-              ))}
-            </SelectField>
+            <AppSelect
+              value={operationId}
+              onChange={setOperationId}
+              placeholder="Выберите операцию"
+              options={operations.map((op) => ({ value: op.id, label: op.label }))}
+            />
           </div>
 
           <div className="space-y-2">
             <FieldLabel>Исполнитель</FieldLabel>
-            <SelectField value={workerId} onChange={(event) => setWorkerId(event.target.value)}>
-              <option value="">Выберите исполнителя</option>
-              {workers
-                .filter((worker) => worker.role === 'worker')
-                .map((worker) => (
-                  <option key={worker.id} value={worker.id}>
-                    {worker.display_name ?? worker.id.slice(0, 8)}
-                  </option>
-                ))}
-            </SelectField>
+            <AppSelect
+              value={workerId}
+              onChange={setWorkerId}
+              placeholder="Выберите исполнителя"
+              options={workers
+                .filter((w) => w.role === 'worker')
+                .map((w) => ({ value: w.id, label: w.display_name ?? w.id.slice(0, 8) }))}
+            />
           </div>
         </div>
 
@@ -420,25 +414,21 @@ function ZonesTab({
                 ))}
               </div>
 
-              <SelectField value={zone.operation_type_id ?? ''} onChange={(event) => event.target.value && onAssignOp(room.id, event.target.value)}>
-                <option value="">Операция не выбрана</option>
-                {operations.map((operation) => (
-                  <option key={operation.id} value={operation.id}>
-                    {operation.label}
-                  </option>
-                ))}
-              </SelectField>
+              <AppSelect
+                value={zone.operation_type_id ?? ''}
+                onChange={(val) => { if (val) onAssignOp(room.id, val) }}
+                placeholder="Операция не выбрана"
+                options={operations.map((op) => ({ value: op.id, label: op.label }))}
+              />
 
-              <SelectField value={zone.assigned_worker_id ?? ''} onChange={(event) => onAssignWorker(room.id, event.target.value || null)}>
-                <option value="">Исполнитель не выбран</option>
-                {workers
-                  .filter((worker) => worker.role === 'worker')
-                  .map((worker) => (
-                    <option key={worker.id} value={worker.id}>
-                      {worker.display_name ?? worker.id.slice(0, 8)}
-                    </option>
-                  ))}
-              </SelectField>
+              <AppSelect
+                value={zone.assigned_worker_id ?? ''}
+                onChange={(val) => onAssignWorker(room.id, val || null)}
+                placeholder="Исполнитель не выбран"
+                options={workers
+                  .filter((w) => w.role === 'worker')
+                  .map((w) => ({ value: w.id, label: w.display_name ?? w.id.slice(0, 8) }))}
+              />
             </div>
           </AppSurface>
         )
@@ -502,19 +492,15 @@ function WorkersTab({
                 </>
               )}
               {isOwner && filter === 'active' && (
-                <select
+                <AppSelect
                   value={worker.role}
-                  onChange={(event) => onChangeRole(worker.id, event.target.value)}
-                  className={cn(
-                    'rounded-xl border border-slate-100 bg-white px-3 py-2 text-[12px] text-text-2 shadow-sm outline-none transition-all duration-200 focus:border-slate-200 focus:ring-2 focus:ring-slate-100',
-                  )}
-                >
-                  {['viewer', 'worker', 'taskmaster'].map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => onChangeRole(worker.id, val)}
+                  options={[
+                    { value: 'viewer', label: 'Viewer' },
+                    { value: 'worker', label: 'Worker' },
+                    { value: 'taskmaster', label: 'Taskmaster' },
+                  ]}
+                />
               )}
               {isOwner && filter === 'rejected' && (
                 <AppButton variant="secondary" size="sm" onClick={() => onChangeStatus(worker.id, 'active')}>

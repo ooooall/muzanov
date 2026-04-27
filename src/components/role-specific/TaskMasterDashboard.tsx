@@ -144,25 +144,18 @@ export function TaskMasterDashboard({
   )
 
   const handleResetBoard = useCallback(async () => {
-    const update: TablesUpdate<'zone_states'> = {
-      status: 'new',
-      operation_type_id: null,
-      assigned_worker_id: null,
-      notes: null,
-      started_at: null,
-      updated_at: new Date().toISOString(),
-    }
+    if (!window.confirm('Сбросить всё? Это удалит всю ленту активностей и обнулит все зоны.')) return
 
-    const { error } = await supabase.from('zone_states').update(update).neq('zone_id', '')
+    const response = await fetch('/api/admin/reset', { method: 'POST' })
 
-    if (!error) {
-      toast.success('Все зоны сброшены в новые')
+    if (response.ok) {
+      toast.success('Всё сброшено с нуля')
       onRefresh()
       return
     }
 
-    toast.error('Не удалось сбросить зоны')
-  }, [onRefresh, supabase])
+    toast.error('Не удалось сбросить')
+  }, [onRefresh])
 
   return (
     <div className="mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 px-4 py-6">
@@ -171,7 +164,7 @@ export function TaskMasterDashboard({
         <p className="text-[13px] text-text-3">Постановка задач, контроль статусов и управление исполнителями без лишнего шума.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <MetricCard label="Новые" value={stats.new} tone="slate" />
         <MetricCard label="В работе" value={stats.in_progress} tone="amber" />
         <MetricCard label="На проверке" value={stats.review} tone="blue" />
@@ -210,7 +203,7 @@ export function TaskMasterDashboard({
               </AppSurface>
             </div>
 
-            <AppSurface className="min-h-0 overflow-hidden">
+            <AppSurface className="hidden min-h-0 overflow-hidden lg:flex lg:flex-col">
               <TaskLane zones={zones} workers={workers} onSelect={setSelectedId} />
             </AppSurface>
           </motion.div>
