@@ -37,7 +37,8 @@ function getStatusFill(status: ZoneStatus): string {
 }
 
 export function RoomShape({ room, state, isSelected, isFiltered, onClick }: RoomShapeProps) {
-  const status = state?.status ?? 'new'
+  const rawStatus = state?.status ?? 'new'
+  const status: ZoneStatus = rawStatus in STATUSES ? (rawStatus as ZoneStatus) : 'new'
   const statusColor = STATUSES[status].color
   const baseFill = ROOM_BASE_FILLS[room.id] ?? '#f8fafc'
   const opacity = isFiltered ? 0.24 : 1
