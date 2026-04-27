@@ -23,6 +23,7 @@ export type ActivityWithZone = ActivityLog & {
 export type RoomGeometry =
   | { type: 'rect'; x: number; y: number; w: number; h: number }
   | { type: 'polygon'; points: string }
+  | { type: 'path'; d: string }
 
 export type RoomDef = {
   id: string
