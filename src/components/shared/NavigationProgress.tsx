@@ -2,56 +2,43 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
 
 export function NavigationProgress() {
   const pathname = usePathname()
-  const [visible, setVisible] = useState(false)
-  const [width, setWidth] = useState(0)
+  const [active, setActive] = useState(false)
   const prev = useRef(pathname)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Detect internal link clicks → start bar
+  useEffect(() => {
+    function onAnchorClick(e: MouseEvent) {
+      const a = (e.target as HTMLElement).closest('a')
+      if (!a) return
+      const href = a.getAttribute('href') ?? ''
+      // Only internal relative paths that actually change the route
+      if (!href.startsWith('/') || href === prev.current) return
+      setActive(true)
+    }
+    document.addEventListener('click', onAnchorClick)
+    return () => document.removeEventListener('click', onAnchorClick)
+  }, [])
+
+  // Pathname changed → route loaded → stop bar
   useEffect(() => {
     if (pathname === prev.current) return
     prev.current = pathname
-    setVisible(false)
-    setWidth(0)
+    setActive(false)
   }, [pathname])
 
-  useEffect(() => {
-    // Show bar when navigation starts (link clicked)
-    function onStart() {
-      if (timer.current) clearTimeout(timer.current)
-      setWidth(0)
-      setVisible(true)
-      // Animate quickly to 85% then stall
-      timer.current = setTimeout(() => setWidth(85), 30)
-    }
-    function onEnd() {
-      setWidth(100)
-      timer.current = setTimeout(() => setVisible(false), 350)
-    }
-
-    window.addEventListener('navigationstart', onStart)
-    window.addEventListener('navigationend', onEnd)
-    return () => {
-      window.removeEventListener('navigationstart', onStart)
-      window.removeEventListener('navigationend', onEnd)
-      if (timer.current) clearTimeout(timer.current)
-    }
-  }, [])
-
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div
-          className="pointer-events-none fixed left-0 right-0 top-0 z-[200] h-[2px] origin-left bg-[#f5c518]"
-          initial={{ scaleX: 0, opacity: 1 }}
-          animate={{ scaleX: width / 100 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: width === 100 ? 0.2 : 0.8, ease: 'easeOut' }}
-        />
-      )}
-    </AnimatePresence>
+    <div
+      aria-hidden
+      className="pointer-events-none fixed left-0 right-0 top-0 z-[200] h-[2px] bg-[#f5c518] origin-left transition-all"
+      style={{
+        transform: active ? 'scaleX(0.85)' : 'scaleX(0)',
+        opacity: active ? 1 : 0,
+        transitionDuration: active ? '600ms' : '200ms',
+        transitionTimingFunction: active ? 'ease-out' : 'ease-in',
+      }}
+    />
   )
 }

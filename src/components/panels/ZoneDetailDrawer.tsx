@@ -218,7 +218,7 @@ export function ZoneDetailDrawer({
           </div>
 
           {canEdit && (
-            <div className="border-t border-slate-100 px-5 py-4">
+            <div className="border-t border-slate-100 px-5 py-4 pb-safe">
               <div className="flex flex-wrap gap-2">
                 {zone.status === 'new' && (
                   <AppButton variant="primary" size="sm" icon={<Play size={13} />} onClick={() => submitStatus('in_progress')}>

@@ -2,11 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Safe-area variables ──────────────────────────────────────────────────── */
 :root {
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bot: env(safe-area-inset-bottom, 0px);
-  --safe-l: env(safe-area-inset-left, 0px);
-  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-top:  env(safe-area-inset-top,    0px);
+  --safe-bot:  env(safe-area-inset-bottom, 0px);
+  --safe-l:    env(safe-area-inset-left,   0px);
+  --safe-r:    env(safe-area-inset-right,  0px);
+}
+
+/* ─── Root ─────────────────────────────────────────────────────────────────── */
+html {
+  /* Fills the iOS notch/Dynamic-Island area with the header colour on every page */
+  background-color: #1e1e26;
+  touch-action: pan-x pan-y;
 }
 
 html,
@@ -19,35 +27,27 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  scrollbar-width: none;
-}
-
-html {
-  touch-action: pan-x pan-y;
-  /* Dark bg fills the iOS safe-area notch on every page — no white strip */
-  background-color: #1e1e26;
 }
 
 body {
-  min-height: 100vh;
   min-height: 100dvh;
-  padding-left: var(--safe-l);
+  padding-left:  var(--safe-l);
   padding-right: var(--safe-r);
 }
 
-* {
+/* ─── Box model ────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-::selection {
-  background: rgba(15, 23, 42, 0.08);
-  color: #0f172a;
-}
-
-/* Hide scrollbars everywhere — Firefox, Chrome, Safari, Edge */
+/* ─── Remove all scrollbars (Firefox / IE-Edge / WebKit) ──────────────────── */
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
+  /* Remove the grey flash when tapping on iOS */
+  -webkit-tap-highlight-color: transparent;
 }
 
 *::-webkit-scrollbar {
@@ -56,27 +56,13 @@ body {
   height: 0;
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+/* ─── Selection ────────────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
 }
 
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.pt-safe {
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-.z-60 {
-  z-index: 60;
-}
-
+/* ─── Forms ────────────────────────────────────────────────────────────────── */
 input,
 textarea,
 select,
@@ -85,19 +71,33 @@ button {
   color: inherit;
 }
 
+/*
+ * iOS zooms the viewport when focused input has font-size < 16px.
+ * Force ≥ 16px on iOS only — the visual size is controlled by Tailwind classes
+ * on top of this via em/rem, so appearance stays the same on other platforms.
+ */
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 button,
 select,
 input,
 textarea {
   transition:
-    background-color 0.24s ease,
-    border-color 0.24s ease,
-    box-shadow 0.24s ease,
-    color 0.24s ease,
-    opacity 0.24s ease,
-    transform 0.24s ease;
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
+/* Autofill colour override (Chrome/Safari) */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
@@ -106,16 +106,15 @@ input:-webkit-autofill:focus {
   caret-color: #0f172a;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
+/* ─── Utility classes ──────────────────────────────────────────────────────── */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pt-safe { padding-top:    env(safe-area-inset-top,    0px); }
+.mb-safe { margin-bottom:  env(safe-area-inset-bottom, 0px); }
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ─── Animation ────────────────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
 }
 
 .animate-fade-in {

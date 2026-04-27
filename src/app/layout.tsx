@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Toaster } from 'sonner'
 import { NavigationProgress } from '@/components/shared/NavigationProgress'
+import { PwaInit } from '@/components/shared/PwaInit'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -11,9 +12,12 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Quarters',
-    startupImage: [],
   },
   formatDetection: { telephone: false },
+  other: {
+    // Standalone mode — disables Safari address bar
+    'mobile-web-app-capable': 'yes',
+  },
 }
 
 export const viewport: Viewport = {
@@ -22,14 +26,17 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
   maximumScale: 1,
   userScalable: false,
-  // Dark status bar so it blends with the header background
-  themeColor: '#1e1e26',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#1e1e26' },
+    { media: '(prefers-color-scheme: dark)',  color: '#1e1e26' },
+  ],
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru">
-      <body className="bg-base text-text-1 font-sans antialiased">
+      <body className="bg-canvas text-text-1 font-sans antialiased">
+        <PwaInit />
         <NavigationProgress />
         {children}
         <Toaster

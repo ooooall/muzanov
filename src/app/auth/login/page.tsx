@@ -103,7 +103,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-dvh bg-canvas flex flex-col items-center justify-center px-4">
+    <div className="min-h-dvh bg-canvas flex flex-col items-center justify-center px-4 pt-safe pb-safe">
       <div className="w-full max-w-sm space-y-8">
         {/* Brand */}
         <div className="flex flex-col items-center gap-3">
