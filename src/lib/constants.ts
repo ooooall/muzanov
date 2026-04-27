@@ -88,7 +88,7 @@ export const ROOMS: RoomDef[] = [
     // Each outer edge inset by 3 px → 6 px gap to adjacent rooms
     shape: {
       type: 'path',
-      d: 'M 153 248 H 522 Q 537 248 537 263 V 417 Q 537 432 522 432 H 217 Q 202 432 202 447 V 607 Q 202 622 187 622 H 162 Q 153 622 153 607 V 263 Q 153 248 168 248 Z',
+      d: 'M 161 248 H 529 Q 537 248 537 256 V 424 Q 537 432 529 432 H 210 Q 202 432 202 440 V 614 Q 202 622 194 622 H 161 Q 153 622 153 614 V 256 Q 153 248 161 248 Z',
     },
     labelAt: { x: 345, y: 350 },
   },
