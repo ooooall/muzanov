@@ -25,6 +25,8 @@ body {
 
 html {
   touch-action: pan-x pan-y;
+  /* Dark bg fills the iOS safe-area notch on every page — no white strip */
+  background-color: #1e1e26;
 }
 
 body {

@@ -28,7 +28,7 @@ export function WorkerDashboard({ zones, userId, onZoneUpdate }: WorkerDashboard
   const archivedZones = assignedZones.filter((zone) => isArchivedStatus(zone.status))
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-screen-lg flex-col gap-5 overflow-x-hidden px-3 py-5 sm:px-4 sm:py-6">
+    <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-5 overflow-x-hidden px-3 py-5 sm:px-4 sm:py-6">
       <div className="space-y-1">
         <h1 className="text-[24px] font-semibold tracking-tight text-text-1">Мои задачи</h1>
         <p className="text-[13px] text-text-3">Только ваши назначения, текущий прогресс и короткие отчёты.</p>

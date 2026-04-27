@@ -88,11 +88,11 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
       <g opacity={isFiltered ? 0.35 : 1}>
         <text
           x={room.labelAt.x}
-          y={room.labelAt.y - 8}
+          y={room.labelAt.y - 20}
           textAnchor="middle"
-          fontSize={8}
+          fontSize={20}
           fontFamily="ui-monospace,SF Mono,monospace"
-          letterSpacing="0.08em"
+          letterSpacing="0.06em"
           fill={statusColor}
           style={{ textTransform: 'uppercase', userSelect: 'none' }}
         >
@@ -100,9 +100,9 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
         </text>
         <text
           x={room.labelAt.x}
-          y={room.labelAt.y + 6}
+          y={room.labelAt.y + 10}
           textAnchor="middle"
-          fontSize={9.5}
+          fontSize={26}
           fontFamily="-apple-system,BlinkMacSystemFont,sans-serif"
           fontWeight={600}
           fill="#0f172a"
@@ -112,11 +112,11 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
         </text>
         <text
           x={room.labelAt.x}
-          y={room.labelAt.y + 19}
+          y={room.labelAt.y + 34}
           textAnchor="middle"
-          fontSize={7.5}
+          fontSize={17}
           fontFamily="ui-monospace,SF Mono,monospace"
-          letterSpacing="0.08em"
+          letterSpacing="0.06em"
           fill={statusColor}
           style={{ textTransform: 'uppercase', userSelect: 'none' }}
         >
