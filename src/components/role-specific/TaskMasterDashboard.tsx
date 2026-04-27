@@ -160,7 +160,7 @@ export function TaskMasterDashboard({
   }, [onRefresh])
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 overflow-x-hidden px-4 py-6">
+    <div className="mx-auto flex h-full w-full max-w-screen-xl flex-col gap-5 overflow-x-hidden px-3 py-5 sm:px-4 sm:py-6">
       <div className="space-y-1">
         <h1 className="text-[24px] font-semibold tracking-tight text-text-1">Операционный центр</h1>
         <p className="text-[13px] text-text-3">Постановка задач, контроль статусов и управление исполнителями без лишнего шума.</p>
@@ -180,7 +180,7 @@ export function TaskMasterDashboard({
           </AppButton>
         ))}
         {isOwnerAccount && (
-          <div className="ml-auto">
+          <div className="w-full sm:ml-auto sm:w-auto">
             <AppButton variant="danger" size="sm" icon={<RefreshCcw size={13} />} onClick={handleResetBoard}>
               Сбросить все с нуля
             </AppButton>
@@ -196,18 +196,16 @@ export function TaskMasterDashboard({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.22 }}
-            className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1.2fr)_380px]"
+            className="grid flex-1 gap-4"
           >
-            <div className="min-h-0 space-y-4">
-              <AppSurface className="overflow-hidden">
-                <MapControls filter={filter} onFilterChange={setFilter} stats={stats} />
-                <div className="p-4">
-                  <FloorPlan zones={zones} selectedId={selectedId} filter={filter} onSelectRoom={setSelectedId} />
-                </div>
-              </AppSurface>
-            </div>
+            <AppSurface className="overflow-hidden">
+              <MapControls filter={filter} onFilterChange={setFilter} stats={stats} />
+              <div className="p-3 sm:p-4">
+                <FloorPlan zones={zones} selectedId={selectedId} filter={filter} onSelectRoom={setSelectedId} />
+              </div>
+            </AppSurface>
 
-            <AppSurface className="hidden min-h-0 overflow-hidden lg:flex lg:flex-col">
+            <AppSurface className="min-h-0 overflow-hidden">
               <TaskLane zones={zones} workers={workers} onSelect={setSelectedId} />
             </AppSurface>
           </motion.div>
@@ -292,11 +290,11 @@ function TaskLane({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-slate-100 px-5 py-4">
+      <div className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
         <h2 className="text-[15px] font-medium text-text-1">Все зоны</h2>
         <p className="text-[12px] text-text-4">Быстрый доступ к задаче, операции и исполнителю.</p>
       </div>
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4">
         {visibleZones.map((zone) => {
           const room = ROOMS.find((item) => item.id === zone.zone_id)
           if (!room) return null
@@ -307,7 +305,7 @@ function TaskLane({
             <button
               key={zone.zone_id}
               onClick={() => onSelect(zone.zone_id)}
-              className="w-full rounded-2xl border border-slate-100 bg-white px-4 py-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-200"
+              className="w-full rounded-2xl border border-slate-100 bg-white px-3 py-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-200 sm:px-4 sm:py-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

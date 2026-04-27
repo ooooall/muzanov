@@ -26,8 +26,9 @@ export function FloorPlan({ zones, selectedId, filter, onSelectRoom }: FloorPlan
     <div className="relative w-full overflow-hidden rounded-[20px] border border-slate-100 bg-white shadow-sm">
       <svg
         viewBox={`0 0 ${MAP_VIEWBOX.w} ${MAP_VIEWBOX.h}`}
-        className="block h-auto w-full"
-        style={{ maxHeight: '75vh' }}
+        className="block h-auto w-full select-none"
+        style={{ maxHeight: '70dvh' }}
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label="План квартиры"
       >
