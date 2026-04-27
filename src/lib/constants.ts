@@ -10,6 +10,45 @@ export const STATUSES: Record<ZoneStatus, { label: string; sub: string; color: s
 
 export const MAP_VIEWBOX = { w: 600, h: 800 }
 
+export type CorridorControls = {
+  topY: number
+  rightX: number
+  innerX: number
+  bottomY: number
+  radius: number
+}
+
+export const DEFAULT_CORRIDOR_CONTROLS: CorridorControls = {
+  topY: 300,
+  rightX: 460,
+  innerX: 226,
+  bottomY: 640,
+  radius: 8,
+}
+
+export function buildCorridorPath({ topY, rightX, innerX, bottomY, radius }: CorridorControls): string {
+  const leftX = 170
+  const innerTopY = topY + 160
+  const outerBottomY = bottomY
+
+  return [
+    `M ${leftX + radius} ${topY}`,
+    `H ${rightX - radius}`,
+    `Q ${rightX} ${topY} ${rightX} ${topY + radius}`,
+    `V ${innerTopY - radius}`,
+    `Q ${rightX} ${innerTopY} ${rightX - radius} ${innerTopY}`,
+    `H ${innerX + radius}`,
+    `Q ${innerX} ${innerTopY} ${innerX} ${innerTopY + radius}`,
+    `V ${outerBottomY - radius}`,
+    `Q ${innerX} ${outerBottomY} ${innerX - radius} ${outerBottomY}`,
+    `H ${leftX + radius}`,
+    `Q ${leftX} ${outerBottomY} ${leftX} ${outerBottomY - radius}`,
+    `V ${topY + radius}`,
+    `Q ${leftX} ${topY} ${leftX + radius} ${topY}`,
+    'Z',
+  ].join(' ')
+}
+
 export const ROOMS: RoomDef[] = [
   {
     id: 'bedroom_small',
@@ -73,7 +112,7 @@ export const ROOMS: RoomDef[] = [
     area: 8.5,
     shape: {
       type: 'path',
-      d: 'M178 300 H452 Q460 300 460 308 V452 Q460 460 452 460 H234 Q226 460 226 468 V632 Q226 640 218 640 H178 Q170 640 170 632 V308 Q170 300 178 300 Z',
+      d: buildCorridorPath(DEFAULT_CORRIDOR_CONTROLS),
     },
     labelAt: { x: 320, y: 404 },
   },
