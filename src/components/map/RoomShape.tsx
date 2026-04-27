@@ -18,7 +18,7 @@ const ROOM_BASE_FILLS: Record<string, string> = {
   bedroom_medium: '#f8fafc',
   living: '#f8fafc',
   kitchen: '#fffef7',
-  corridor: '#fbcfe8',
+  corridor: '#f1f5f9',
   wardrobe: '#f8fafc',
   entry: '#f8fafc',
   bath: '#f0fdfa',
