@@ -16,9 +16,10 @@ interface Props {
   workers: Profile[]
   operations: OperationType[]
   userId: string
+  isOwnerAccount: boolean
 }
 
-export default function TaskMasterDashboardWrapper({ zones: initial, activity, workers, operations, userId }: Props) {
+export default function TaskMasterDashboardWrapper({ zones: initial, activity, workers, operations, userId, isOwnerAccount }: Props) {
   const [zones, setZones] = useState(initial)
   const router = useRouter()
   const [supabase] = useState(() => createClient())
@@ -70,6 +71,7 @@ export default function TaskMasterDashboardWrapper({ zones: initial, activity, w
       workers={workers}
       operations={operations}
       userId={userId}
+      isOwnerAccount={isOwnerAccount}
       onZoneUpdate={handleZoneUpdate}
       onRefresh={() => router.refresh()}
     />

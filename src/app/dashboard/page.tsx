@@ -4,6 +4,7 @@ import { Header } from '@/components/shared/Header'
 import { BottomNav } from '@/components/shared/BottomNav'
 import type { ZoneWithState, ActivityWithZone, Profile, OperationType } from '@/types'
 import type { UserRole } from '@/types/roles'
+import { isOwnerEmail } from '@/lib/auth'
 
 export const revalidate = 0
 
@@ -58,6 +59,7 @@ export default async function DashboardPage() {
             workers={(workers ?? []) as Profile[]}
             operations={(operations ?? []) as OperationType[]}
             userId={user.id}
+            isOwnerAccount={isOwnerEmail(user.email)}
           />
         )}
       </main>

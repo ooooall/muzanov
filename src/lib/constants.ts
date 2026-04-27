@@ -71,8 +71,8 @@ export const ROOMS: RoomDef[] = [
     name: 'Коридор / холл',
     short: 'Коридор',
     area: 8.5,
-    shape: { type: 'polygon', points: '170,310 460,310 460,450 210,450 210,600 170,600' },
-    labelAt: { x: 320, y: 380 },
+    shape: { type: 'path', d: 'M170 310 H460 V450 H230 V600 H170 Z' },
+    labelAt: { x: 314, y: 412 },
   },
   {
     id: 'kitchen',

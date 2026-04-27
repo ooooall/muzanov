@@ -12,6 +12,7 @@
 html,
 body {
   height: 100%;
+  overflow-x: hidden;
   background: #f8fafc;
   color: #0f172a;
   overscroll-behavior: none;
@@ -43,8 +44,8 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 0;
+  height: 0;
 }
 
 ::-webkit-scrollbar-track {
@@ -52,12 +53,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.18);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(15, 23, 42, 0.26);
+  background: transparent;
 }
 
 .scrollbar-hide::-webkit-scrollbar {

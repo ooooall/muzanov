@@ -18,7 +18,7 @@ const ROOM_BASE_FILLS: Record<string, string> = {
   bedroom_medium: '#f8fafc',
   living: '#f8fafc',
   kitchen: '#fffef7',
-  corridor: '#f1f5f9',
+  corridor: '#fbcfe8',
   wardrobe: '#f8fafc',
   entry: '#f8fafc',
   bath: '#f0fdfa',
@@ -49,6 +49,11 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
           kind: 'rect' as const,
           props: { x: room.shape.x, y: room.shape.y, width: room.shape.w, height: room.shape.h, rx: 8, ry: 8 },
         }
+      : room.shape.type === 'path'
+        ? {
+            kind: 'path' as const,
+            props: { d: room.shape.d },
+          }
       : {
           kind: 'polygon' as const,
           props: { points: room.shape.points },
@@ -56,6 +61,7 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
 
   function renderShape(extraProps: Record<string, string | number>) {
     if (shape.kind === 'rect') return <rect {...shape.props} {...extraProps} />
+    if (shape.kind === 'path') return <path {...shape.props} strokeLinejoin="miter" {...extraProps} />
     return <polygon {...shape.props} strokeLinejoin="miter" {...extraProps} />
   }
 

@@ -26,6 +26,7 @@ interface TaskMasterDashboardProps {
   workers: Profile[]
   operations: OperationType[]
   userId: string
+  isOwnerAccount: boolean
   onZoneUpdate: (zoneId: string, status: ZoneStatus, extra?: Partial<TablesUpdate<'zone_states'>>) => Promise<unknown>
   onRefresh: () => void
 }
@@ -44,6 +45,7 @@ export function TaskMasterDashboard({
   workers,
   operations,
   userId,
+  isOwnerAccount,
   onZoneUpdate,
   onRefresh,
 }: TaskMasterDashboardProps) {
@@ -158,7 +160,7 @@ export function TaskMasterDashboard({
   }, [onRefresh])
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 px-4 py-6">
+    <div className="mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 overflow-x-hidden px-4 py-6">
       <div className="space-y-1">
         <h1 className="text-[24px] font-semibold tracking-tight text-text-1">Операционный центр</h1>
         <p className="text-[13px] text-text-3">Постановка задач, контроль статусов и управление исполнителями без лишнего шума.</p>
@@ -177,11 +179,13 @@ export function TaskMasterDashboard({
             {label}
           </AppButton>
         ))}
-        <div className="ml-auto">
-          <AppButton variant="danger" size="sm" icon={<RefreshCcw size={13} />} onClick={handleResetBoard}>
-            Сбросить все зоны
-          </AppButton>
-        </div>
+        {isOwnerAccount && (
+          <div className="ml-auto">
+            <AppButton variant="danger" size="sm" icon={<RefreshCcw size={13} />} onClick={handleResetBoard}>
+              Сбросить все с нуля
+            </AppButton>
+          </div>
+        )}
       </div>
 
       <AnimatePresence mode="wait">

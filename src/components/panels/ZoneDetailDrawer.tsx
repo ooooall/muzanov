@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { AppButton } from '@/components/shared/AppButton'
 import { AppSurface } from '@/components/shared/AppSurface'
-import { FieldLabel, SelectField, TextArea } from '@/components/shared/AppField'
+import { AppSelect, FieldLabel, TextArea } from '@/components/shared/AppField'
 import { ROOMS } from '@/lib/constants'
 import { formatDateTime, formatElapsed, formatRelative } from '@/lib/utils'
 import { DEFAULT_ZONE_STATUS } from '@/lib/zone-workflow'
@@ -165,26 +165,30 @@ export function ZoneDetailDrawer({
             {isTaskmaster && (
               <AppSurface className="space-y-3 p-4">
                 <FieldLabel>Операция</FieldLabel>
-                <SelectField value={zone.operation_type_id ?? ''} onChange={(event) => event.target.value && onAssignOperation?.(currentZoneId, event.target.value)}>
-                  <option value="">Выберите операцию</option>
-                  {operations.map((operation) => (
-                    <option key={operation.id} value={operation.id}>
-                      {operation.label} ({operation.code})
-                    </option>
-                  ))}
-                </SelectField>
+                <AppSelect
+                  value={zone.operation_type_id ?? ''}
+                  onChange={(value) => {
+                    if (value) onAssignOperation?.(currentZoneId, value)
+                  }}
+                  placeholder="Выберите операцию"
+                  options={operations.map((operation) => ({
+                    value: operation.id,
+                    label: `${operation.label} (${operation.code})`,
+                  }))}
+                />
 
                 <FieldLabel>Исполнитель</FieldLabel>
-                <SelectField value={zone.assigned_worker_id ?? ''} onChange={(event) => onAssignWorker?.(currentZoneId, event.target.value || null)}>
-                  <option value="">Без исполнителя</option>
-                  {workers
+                <AppSelect
+                  value={zone.assigned_worker_id ?? ''}
+                  onChange={(value) => onAssignWorker?.(currentZoneId, value || null)}
+                  placeholder="Без исполнителя"
+                  options={workers
                     .filter((worker) => worker.role === 'worker')
-                    .map((worker) => (
-                      <option key={worker.id} value={worker.id}>
-                        {worker.display_name ?? worker.id.slice(0, 8)}
-                      </option>
-                    ))}
-                </SelectField>
+                    .map((worker) => ({
+                      value: worker.id,
+                      label: worker.display_name ?? worker.id.slice(0, 8),
+                    }))}
+                />
               </AppSurface>
             )}
 
