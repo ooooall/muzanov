@@ -120,3 +120,38 @@ input:-webkit-autofill:focus {
 .animate-fade-in {
   animation: fadeInUp 220ms ease forwards;
 }
+
+/*
+ * Zone pulse — CSS animation replaces Framer Motion infinite loop.
+ * Browser compositor thread handles this; no JS RAF per frame.
+ */
+@keyframes zone-pulse {
+  0%, 100% { opacity: 0.2; }
+  50%       { opacity: 0.6; }
+}
+
+.zone-pulse {
+  animation: zone-pulse 2.2s ease-in-out infinite;
+  will-change: opacity;
+}
+
+/* Logo pulse on loading screen */
+@keyframes logo-pulse {
+  0%, 100% { opacity: 1;    }
+  50%       { opacity: 0.5; }
+}
+
+.logo-pulse {
+  animation: logo-pulse 2s ease-in-out infinite;
+  will-change: opacity;
+}
+
+/* Dot bounce on loading screen */
+@keyframes dot-fade {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 1;   }
+}
+
+.dot-pulse-0 { animation: dot-fade 1.2s ease-in-out infinite 0s;     will-change: opacity; }
+.dot-pulse-1 { animation: dot-fade 1.2s ease-in-out infinite 0.18s;  will-change: opacity; }
+.dot-pulse-2 { animation: dot-fade 1.2s ease-in-out infinite 0.36s;  will-change: opacity; }

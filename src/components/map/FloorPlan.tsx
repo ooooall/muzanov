@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { MAP_VIEWBOX, ROOMS } from '@/lib/constants'
 import { getZoneStats } from '@/lib/zone-workflow'
 import { RoomShape } from './RoomShape'
@@ -14,13 +14,29 @@ interface FloorPlanProps {
 }
 
 function isFilteredOut(filter: string, status: string) {
-  if (filter === 'all') return false
-  return filter !== status
+  return filter !== 'all' && filter !== status
 }
 
-export function FloorPlan({ zones, selectedId, filter, onSelectRoom }: FloorPlanProps) {
-  const stateMap = useMemo(() => new Map(zones.map((zone) => [zone.zone_id, zone])), [zones])
-  const stats = useMemo(() => getZoneStats(zones.map((zone) => zone.status)), [zones])
+export const FloorPlan = memo(function FloorPlan({
+  zones,
+  selectedId,
+  filter,
+  onSelectRoom,
+}: FloorPlanProps) {
+  const stateMap = useMemo(
+    () => new Map(zones.map(z => [z.zone_id, z])),
+    [zones],
+  )
+  const stats = useMemo(
+    () => getZoneStats(zones.map(z => z.status)),
+    [zones],
+  )
+
+  // Stable click handlers — recreated only when onSelectRoom changes
+  const clickHandlers = useMemo(
+    () => Object.fromEntries(ROOMS.map(r => [r.id, () => onSelectRoom(r.id)])),
+    [onSelectRoom],
+  )
 
   return (
     <div className="relative w-full overflow-hidden rounded-[20px] border border-slate-100 bg-white shadow-sm">
@@ -40,35 +56,31 @@ export function FloorPlan({ zones, selectedId, filter, onSelectRoom }: FloorPlan
 
         <rect width={MAP_VIEWBOX.w} height={MAP_VIEWBOX.h} fill="url(#grid)" />
 
-        {ROOMS.map((room) => {
-          const state = stateMap.get(room.id) ?? null
-          const filtered = isFilteredOut(filter, state?.status ?? 'new')
-
-          return (
-            <RoomShape
-              key={room.id}
-              room={room}
-              state={state}
-              isSelected={selectedId === room.id}
-              isFiltered={filtered}
-              onClick={() => onSelectRoom(room.id)}
-            />
-          )
-        })}
+        {ROOMS.map(room => (
+          <RoomShape
+            key={room.id}
+            room={room}
+            state={stateMap.get(room.id) ?? null}
+            isSelected={selectedId === room.id}
+            isFiltered={isFilteredOut(filter, stateMap.get(room.id)?.status ?? 'new')}
+            onClick={clickHandlers[room.id]}
+          />
+        ))}
       </svg>
 
+      {/* Stats badges — solid bg, no backdrop-blur */}
       <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
         {stats.in_progress > 0 && (
-          <span className="rounded-full border border-amber-100 bg-white/90 px-2 py-1 font-mono text-[9px] uppercase tracking-wide text-amber-700 backdrop-blur">
+          <span className="rounded-full border border-amber-100 bg-white px-2 py-1 font-mono text-[9px] uppercase tracking-wide text-amber-700">
             {stats.in_progress} в работе
           </span>
         )}
         {stats.review > 0 && (
-          <span className="rounded-full border border-blue-100 bg-white/90 px-2 py-1 font-mono text-[9px] uppercase tracking-wide text-blue-700 backdrop-blur">
+          <span className="rounded-full border border-blue-100 bg-white px-2 py-1 font-mono text-[9px] uppercase tracking-wide text-blue-700">
             {stats.review} на проверке
           </span>
         )}
       </div>
     </div>
   )
-}
+})

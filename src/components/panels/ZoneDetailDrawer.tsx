@@ -119,21 +119,25 @@ export function ZoneDetailDrawer({
 
   return (
     <AnimatePresence>
+      {/* Overlay — no backdrop-blur (GPU-expensive on mobile) */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: zoneId ? 1 : 0 }}
         exit={{ opacity: 0 }}
-        className={zoneId ? 'fixed inset-0 z-50 bg-slate-950/16 backdrop-blur-sm' : 'pointer-events-none fixed inset-0 z-50 opacity-0'}
+        transition={{ duration: 0.2 }}
+        className={zoneId ? 'fixed inset-0 z-50 bg-slate-950/20' : 'pointer-events-none fixed inset-0 z-50 opacity-0'}
         onClick={onClose}
       />
 
       {zoneId && (
         <motion.aside
-          initial={{ x: 420, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 420, opacity: 0 }}
-          transition={{ duration: 0.28, ease: 'easeOut' }}
-          className="fixed inset-x-0 bottom-0 z-[60] flex max-h-[90dvh] flex-col rounded-t-[24px] border border-slate-100 bg-white shadow-2xl lg:inset-y-4 lg:right-4 lg:left-auto lg:w-[420px] lg:max-h-none lg:rounded-3xl"
+          // Mobile: slide up from bottom. Desktop: slide in from right.
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
+          className="fixed inset-x-0 bottom-0 z-[60] flex max-h-[90dvh] flex-col rounded-t-[24px] border border-slate-100 bg-white shadow-xl lg:inset-x-auto lg:inset-y-4 lg:right-4 lg:w-[420px] lg:max-h-none lg:rounded-3xl"
+          style={{ willChange: 'transform' }}
           onClick={(event) => event.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5">

@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { STATUSES } from '@/lib/constants'
 import type { RoomDef, ZoneWithState } from '@/types'
@@ -32,20 +33,28 @@ const STATUS_FILL: Record<ZoneStatus, string> = {
   done:        'rgba(5,150,105,0.14)',
 }
 
-export function RoomShape({ room, state, isSelected, isFiltered, onClick }: RoomShapeProps) {
+// React.memo — only re-renders when this zone's props actually change.
+// With patchZone spreading a new object only for the changed zone,
+// all other zones keep the same `state` reference and are skipped.
+export const RoomShape = memo(function RoomShape({
+  room,
+  state,
+  isSelected,
+  isFiltered,
+  onClick,
+}: RoomShapeProps) {
   const rawStatus = state?.status ?? 'new'
-  const status: ZoneStatus = rawStatus in STATUSES ? (rawStatus as ZoneStatus) : 'new'
+  const status: ZoneStatus  = rawStatus in STATUSES ? (rawStatus as ZoneStatus) : 'new'
   const statusColor = STATUSES[status].color
-  const baseFill   = BASE_FILL[room.id] ?? '#f8fafc'
-  const opacity    = isFiltered ? 0.24 : 1
+  const baseFill    = BASE_FILL[room.id] ?? '#f8fafc'
+  const opacity     = isFiltered ? 0.24 : 1
 
-  // Build a typed shape descriptor once
   const shape =
     room.shape.type === 'rect'
-      ? { kind: 'rect' as const,    props: { x: room.shape.x, y: room.shape.y, width: room.shape.w, height: room.shape.h, rx: 8, ry: 8 } }
+      ? { kind: 'rect' as const,   props: { x: room.shape.x, y: room.shape.y, width: room.shape.w, height: room.shape.h, rx: 8, ry: 8 } }
       : room.shape.type === 'path'
-        ? { kind: 'path' as const,  props: { d: room.shape.d } }
-        : { kind: 'poly' as const,  props: { points: (room.shape as { type: 'polygon'; points: string }).points } }
+        ? { kind: 'path' as const,   props: { d: room.shape.d } }
+        : { kind: 'poly' as const,   props: { points: (room.shape as { type: 'polygon'; points: string }).points } }
 
   function renderShape(extra: React.SVGProps<SVGElement>) {
     if (shape.kind === 'rect') return <rect {...shape.props} {...(extra as React.SVGProps<SVGRectElement>)} />
@@ -55,6 +64,7 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
 
   const clipId = `clip-${room.id}`
   const { x: lx, y: ly } = room.labelAt
+  const isPulsing = (status === 'in_progress' || status === 'review') && !isFiltered
 
   return (
     <g
@@ -63,18 +73,15 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
       role="button"
       aria-label={`${room.name} — ${STATUSES[status].label}`}
     >
-      {/* Clip path keeps text inside zone boundaries */}
       <defs>
-        <clipPath id={clipId}>
-          {renderShape({})}
-        </clipPath>
+        <clipPath id={clipId}>{renderShape({})}</clipPath>
       </defs>
 
       {/* Zone fills */}
       {renderShape({ fill: baseFill, opacity })}
       {renderShape({ fill: STATUS_FILL[status], opacity })}
 
-      {/* Border */}
+      {/* Border — only animate opacity, not geometry (cheaper) */}
       <motion.g animate={{ opacity: isSelected ? 1 : 0.94 }} transition={{ duration: 0.15 }}>
         {renderShape({
           fill: 'none',
@@ -84,59 +91,35 @@ export function RoomShape({ room, state, isSelected, isFiltered, onClick }: Room
         })}
       </motion.g>
 
-      {/* Active-status pulse */}
-      {(status === 'in_progress' || status === 'review') && !isFiltered && (
-        <motion.g
-          animate={{ opacity: [0.2, 0.55, 0.2] }}
-          transition={{ duration: 2.2, repeat: Infinity }}
-        >
+      {/*
+        CSS animation instead of Framer Motion infinite loop.
+        Framer Motion uses JS RAF for every frame; CSS animations
+        are handed off to the GPU compositor thread — much lighter on mobile.
+      */}
+      {isPulsing && (
+        <g className="zone-pulse">
           {renderShape({ fill: 'none', stroke: statusColor, strokeWidth: 2.6 })}
-        </motion.g>
+        </g>
       )}
 
-      {/* Labels — clipped so text never overflows the zone */}
+      {/* Labels clipped to zone boundary */}
       <g clipPath={`url(#${clipId})`} opacity={isFiltered ? 0.35 : 1}>
-        {/* Zone code  e.g. BR-01 */}
-        <text
-          x={lx} y={ly - 16}
-          textAnchor="middle"
-          fontSize={17}
-          fontWeight={400}
-          fontFamily="ui-monospace,SF Mono,monospace"
-          letterSpacing="0.06em"
-          fill={statusColor}
-          style={{ textTransform: 'uppercase', userSelect: 'none' }}
-        >
+        <text x={lx} y={ly - 16} textAnchor="middle" fontSize={17} fontWeight={400}
+          fontFamily="ui-monospace,SF Mono,monospace" letterSpacing="0.06em" fill={statusColor}
+          style={{ textTransform: 'uppercase', userSelect: 'none' }}>
           {room.code}
         </text>
-
-        {/* Room short name */}
-        <text
-          x={lx} y={ly + 7}
-          textAnchor="middle"
-          fontSize={21}
-          fontWeight={400}
-          fontFamily="-apple-system,BlinkMacSystemFont,sans-serif"
-          fill="#0f172a"
-          style={{ userSelect: 'none' }}
-        >
+        <text x={lx} y={ly + 7} textAnchor="middle" fontSize={21} fontWeight={400}
+          fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fill="#0f172a"
+          style={{ userSelect: 'none' }}>
           {room.short}
         </text>
-
-        {/* Status label  e.g. NEW */}
-        <text
-          x={lx} y={ly + 26}
-          textAnchor="middle"
-          fontSize={14}
-          fontWeight={400}
-          fontFamily="ui-monospace,SF Mono,monospace"
-          letterSpacing="0.06em"
-          fill={statusColor}
-          style={{ textTransform: 'uppercase', userSelect: 'none' }}
-        >
+        <text x={lx} y={ly + 26} textAnchor="middle" fontSize={14} fontWeight={400}
+          fontFamily="ui-monospace,SF Mono,monospace" letterSpacing="0.06em" fill={statusColor}
+          style={{ textTransform: 'uppercase', userSelect: 'none' }}>
           {STATUSES[status].sub}
         </text>
       </g>
     </g>
   )
-}
+})

@@ -24,7 +24,7 @@ export function BottomNav({ role }: BottomNavProps) {
   if (visibleTabs.length <= 1) return null
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-100 bg-white/90 backdrop-blur-xl pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-100 bg-white pb-safe">
       <div className="mx-auto flex max-w-screen-xl items-center">
         {visibleTabs.map(({ href, icon: Icon, label }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
