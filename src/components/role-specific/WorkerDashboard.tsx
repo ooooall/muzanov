@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle2, ChevronDown, ClipboardList, Play, Send } from 'lucide-react'
 import { toast } from 'sonner'
@@ -113,7 +113,9 @@ function EmptyState() {
   )
 }
 
-function TaskCard({
+// memo: re-renders only when this card's zone object changes.
+// Other zones keep their reference via patchZone's map, so they're skipped.
+const TaskCard = memo(function TaskCard({
   zone,
   userId,
   onStatusChange,
@@ -283,4 +285,4 @@ function TaskCard({
       </AnimatePresence>
     </AppSurface>
   )
-}
+})

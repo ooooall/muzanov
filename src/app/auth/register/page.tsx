@@ -54,7 +54,7 @@ export default function RegisterPage() {
 
   if (done) {
     return (
-      <div className="min-h-dvh bg-canvas flex flex-col items-center justify-center px-4">
+      <div className="min-h-dvh bg-canvas flex flex-col items-center justify-center px-4 pt-safe pb-safe">
         <div className="w-full max-w-sm text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-success-soft border border-success/30 grid place-items-center mx-auto">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -75,7 +75,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-canvas flex flex-col items-center justify-center px-4">
+    <div className="min-h-dvh bg-canvas flex flex-col items-center justify-center px-4 pt-safe pb-safe">
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-3">
           <span className="w-12 h-12 rounded-xl bg-[#1e1e26] border border-border-strong grid place-items-center">
