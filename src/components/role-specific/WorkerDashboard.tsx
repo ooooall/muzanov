@@ -20,9 +20,10 @@ interface WorkerDashboardProps {
   zones: ZoneWithState[]
   userId: string
   onZoneUpdate: (zoneId: string, status: ZoneStatus, extra?: Partial<TablesUpdate<'zone_states'>>) => Promise<unknown>
+  onPatchZone: (zoneId: string, patch: Partial<ZoneWithState>) => void
 }
 
-export function WorkerDashboard({ zones, userId, onZoneUpdate }: WorkerDashboardProps) {
+export function WorkerDashboard({ zones, userId, onZoneUpdate, onPatchZone }: WorkerDashboardProps) {
   const assignedZones = zones.filter((zone) => zone.assigned_worker_id === userId)
   const activeZones = assignedZones.filter((zone) => !isArchivedStatus(zone.status))
   const archivedZones = assignedZones.filter((zone) => isArchivedStatus(zone.status))
@@ -53,7 +54,7 @@ export function WorkerDashboard({ zones, userId, onZoneUpdate }: WorkerDashboard
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.28, delay: index * 0.04, ease: 'easeOut' }}
               >
-                <TaskCard zone={zone} userId={userId} onStatusChange={onZoneUpdate} />
+                <TaskCard zone={zone} userId={userId} onStatusChange={onZoneUpdate} onPatchZone={onPatchZone} />
               </motion.div>
             ))}
           </div>
@@ -65,7 +66,7 @@ export function WorkerDashboard({ zones, userId, onZoneUpdate }: WorkerDashboard
           <SectionHeading title="Архив" count={archivedZones.length} />
           <div className="grid gap-4">
             {archivedZones.map((zone) => (
-              <TaskCard key={zone.zone_id} zone={zone} userId={userId} onStatusChange={onZoneUpdate} archived />
+              <TaskCard key={zone.zone_id} zone={zone} userId={userId} onStatusChange={onZoneUpdate} onPatchZone={onPatchZone} archived />
             ))}
           </div>
         </section>
@@ -116,11 +117,13 @@ function TaskCard({
   zone,
   userId,
   onStatusChange,
+  onPatchZone,
   archived = false,
 }: {
   zone: ZoneWithState
   userId: string
   onStatusChange: (zoneId: string, status: ZoneStatus, extra?: Partial<TablesUpdate<'zone_states'>>) => Promise<unknown>
+  onPatchZone: (zoneId: string, patch: Partial<ZoneWithState>) => void
   archived?: boolean
 }) {
   const room = ROOMS.find((item) => item.id === zone.zone_id)
@@ -145,24 +148,23 @@ function TaskCard({
   if (!room) return null
 
   async function handleSaveNote() {
-    if (!noteText.trim()) return
+    const trimmed = noteText.trim()
+    if (!trimmed) return
     setSavingNote(true)
 
-    const update: TablesUpdate<'zone_states'> = {
-      notes: noteText.trim(),
-      updated_at: new Date().toISOString(),
-    }
+    // Optimistic: show updated note immediately
+    onPatchZone(zone.zone_id, { notes: trimmed, updated_at: new Date().toISOString() })
 
-    const { error } = await supabase.from('zone_states').update(update).eq('zone_id', zone.zone_id)
+    const { error } = await supabase
+      .from('zone_states')
+      .update({ notes: trimmed, updated_at: new Date().toISOString() })
+      .eq('zone_id', zone.zone_id)
 
     if (!error) {
       const log: TablesInsert<'activity_log'> = {
-        zone_id: zone.zone_id,
-        user_id: userId,
-        action: 'note_added',
-        details: { note: noteText.trim() },
+        zone_id: zone.zone_id, user_id: userId, action: 'note_added', details: { note: trimmed },
       }
-      await supabase.from('activity_log').insert(log)
+      supabase.from('activity_log').insert(log) // fire-and-forget
       toast.success('Отчёт сохранён')
     } else {
       toast.error('Не удалось сохранить отчёт')
@@ -172,6 +174,7 @@ function TaskCard({
   }
 
   async function setStatus(status: ZoneStatus) {
+    // onStatusChange already applies optimistic patch in the wrapper
     const error = await onStatusChange(zone.zone_id, status)
     if (!error) {
       setExpanded(status !== 'done')
